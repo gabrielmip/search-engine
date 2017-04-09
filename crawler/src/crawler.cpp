@@ -46,8 +46,6 @@ void worker (Crawler crw, Scheduler schd) {
     }
 }
 
-////thread *workers;
-
 Crawler::Crawler () {}
 
 Crawler::Crawler (vector<string> seeds, int numWorkers, int politeness, string outputPath) {

@@ -12,7 +12,7 @@ int main(){
 	s.setPolitenessTime(30);
 	Utils u;
 	string url;
-	s.addUrl("http://www.chilkatsoft.com/topzerademais.html/");
+	s.addUrl("http://chilkatsoft.com/topzerademais.html/");
 	s.addUrl("http://www.uol.com.br");
 	s.addUrl("http://www.jogos.tops.com");
 	s.addUrl("http://www.chilkatsoft.com/topzerademais/#!/?123+asd");
