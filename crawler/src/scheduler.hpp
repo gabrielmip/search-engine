@@ -20,13 +20,14 @@ class Compare {
 class Scheduler {
     private:
         std::list<std::pair<std::string, std::string> > waitingUrls;
-        std::unordered_map<std::string, char> visitedUrls;
+        std::unordered_map<std::string, char> registeredUrls;
         std::unordered_map<std::string, time_t> domainLastVisit;
         std::mutex mtx;
         std::priority_queue<std::pair<int, std::string>, std::vector<std::pair<int, std::string> >, Compare> urlsToCrawl;
         
         void updateDomainAccessTime (std::string domain);
         bool domainCanBeAccessed (std::string domain);
+        bool hasBeenSeen (std::string url);
         int POLITENESS_TIME; // seconds
         Utils utils;
         
@@ -35,7 +36,9 @@ class Scheduler {
         Scheduler ();
         bool hasUnvisited ();
         std::string popUrl ();
-        void setPolitenessTime();
+        void setPolitenessTime(int seconds);
+        void addUrl (std::string url);
+        void addUrls (std::list<std::string> urls);
 
 };
 

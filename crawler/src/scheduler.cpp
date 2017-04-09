@@ -83,3 +83,39 @@ bool Scheduler::domainCanBeAccessed (string domain) {
         exit (EXIT_FAILURE);
     }
 }
+
+bool Scheduler::hasBeenSeen (string url) {
+    try {
+        char c = registeredUrls[url];
+        return true;
+    } catch (const out_of_range& oor) {
+        return false;
+    }
+}
+
+void Scheduler::addUrl (string url) {
+    if (!hasBeenSeen(url)) {
+        int nComponents = utils.countComponents(url);
+
+        mtx.lock();
+        registeredUrls[url] = '';
+        urlsToCrawl.push(make_pair(nComponents, url));
+        mtx.unlock();
+    }
+}
+
+void Scheduler::addUrls (list<string> urls) {
+    mtx.lock();
+    for (int i = 0; i < urls.size(); i++) {
+        if (!hasBeenSeen(urls[i])) {
+            int nComponents = utils.countComponents(urls[i]);
+            registeredUrls[urls[i]] = '';
+            urlsToCrawl.push(make_pair(nComponents, urls[i]));
+        }
+    }
+    mtx.unlock();    
+}
+
+void Scheduler::setPolitenessTime(int seconds) {
+    POLITENESS_TIME = seconds;
+}
