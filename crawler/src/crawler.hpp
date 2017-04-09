@@ -5,6 +5,10 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <chrono>
+#include <mutex>
+#include <algorithm>
+#include <fstream>
 #include "scheduler.hpp"
 
 // thread
@@ -19,9 +23,20 @@ class Crawler {
         void setNumWorkers (int amount);
         void setPolitenessTime (int seconds);
         void setOutputFolder (std::string path);
+        bool isStillCrawling ();
+        void savePage (std::string url, std::string html);
+
 
     private:
         std::thread *workers;
+        Scheduler schd;
+        bool stillCrawling;
+        std::string htmlBuffer;
+        std::string filePrefix;
+        int fileCounter;
+        std::mutex bufferMtx;
+        int PAGES_PER_FILE;
+        int NUM_PAGES_TO_COLLECT;
 
 };
 

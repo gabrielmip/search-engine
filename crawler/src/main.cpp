@@ -18,12 +18,16 @@ int main(){
 	s.addUrl("http://www.chilkatsoft.com/topzerademais/#!/?123+asd");
 	url = s.popUrl();
 	cout << "Popped URL: " << url << endl;
+	cout << "Domain: " << u.getDomain(url) << endl;
 	url = s.popUrl();
 	cout << "Popped URL: " << url << endl;
+	cout << "Domain: " << u.getDomain(url) << endl;
 	url = s.popUrl();
 	cout << "Popped URL: " << url << endl;
+	cout << "Domain: " << u.getDomain(url) << endl;
 	url = s.popUrl();
 	cout << "Popped URL: " << url << endl;
+	cout << "Domain: " << u.getDomain(url) << endl;
 	return 0;
 
 	CkSpider spider;
