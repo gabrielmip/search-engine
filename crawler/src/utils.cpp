@@ -39,5 +39,7 @@ int Utils::countDepth (string url) {
         if (url[i] == '/') depth++;
     }
 
+    if (url[i-1] != '/') depth++;
+
     return depth;
 }

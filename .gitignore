@@ -34,3 +34,5 @@
 
 crawler/crawler
 crawler/bin/*
+
+crawler/documents/

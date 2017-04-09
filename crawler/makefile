@@ -1,6 +1,6 @@
 OBJ_DIR=./bin
 SRC_DIR=./src
-FLAGS=-std=c++11 -Wall -lpthread -lresolv
+FLAGS=-std=c++11 -Wall -lpthread -lresolv -g
 UNAME_S := $(shell uname -s)
 TOP := $(shell pwd)
 ifeq ($(UNAME_S),Linux)

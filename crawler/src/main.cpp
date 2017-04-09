@@ -1,35 +1,34 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include "scheduler.hpp"
-//#include "crawler.hpp"
+#include <fstream>
+#include "crawler.hpp"
 
 using namespace std;
 
-int main(){
+vector<string> readSeedFile (string path) {
+	fstream fs;
+	string line;
+	vector<string> seeds;
 
-	Scheduler s;
-	s.setPolitenessTime(30);
-	Utils u;
-	string url;
-	s.addUrl("http://chilkatsoft.com/topzerademais.html/");
-	s.addUrl("http://www.uol.com.br");
-	s.addUrl("http://www.jogos.tops.com");
-	s.addUrl("http://www.chilkatsoft.com/topzerademais/#!/?123+asd");
-	url = s.popUrl();
-	cout << "Popped URL: " << url << endl;
-	cout << "Domain: " << u.getDomain(url) << endl;
-	url = s.popUrl();
-	cout << "Popped URL: " << url << endl;
-	cout << "Domain: " << u.getDomain(url) << endl;
-	url = s.popUrl();
-	cout << "Popped URL: " << url << endl;
-	cout << "Domain: " << u.getDomain(url) << endl;
-	url = s.popUrl();
-	cout << "Popped URL: " << url << endl;
-	cout << "Domain: " << u.getDomain(url) << endl;
-	return 0;
+	fs.open(path, fstream::in);
+	while (!fs.eof()) {
+		fs >> line;
+		seeds.push_back(line);
+	}
+	return seeds;
+}
 
+int main(int argc, char **argv){
+
+	vector<string> seeds = readSeedFile(argv[1]);
+	int nworkers = atoi(argv[2]);
+	int seconds = 30;
+	string outputPath = argv[3];
+	Crawler crawler (seeds, nworkers, seconds, outputPath);
+	crawler.start();
+
+	/*
 	CkSpider spider;
 	string html;
 	// string url;
@@ -60,4 +59,5 @@ int main(){
 	}
 
 	spider.ClearOutboundLinks(); // Clears all outbound links
+	*/
 }

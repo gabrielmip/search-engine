@@ -39,6 +39,7 @@ class Scheduler {
         void setPolitenessTime(int seconds);
         void addUrl (std::string url);
         void addUrls (std::vector<std::string> urls);
+        void reAddUrl (std::string url);
 
 };
 

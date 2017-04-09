@@ -92,7 +92,6 @@ bool Scheduler::hasBeenSeen (string url) {
 
 void Scheduler::addUrl (string url) {
     if (!hasBeenSeen(url)) {
-        cout << "URL added" << endl;
         int depth = utils.countDepth(url);
 
         mtx.lock();
@@ -112,6 +111,13 @@ void Scheduler::addUrls (vector<string> urls) {
         }
     }
     mtx.unlock();    
+}
+
+void Scheduler::reAddUrl (string url) {
+    mtx.lock();
+    string domain = utils.getDomain(url);
+    waitingUrls.push_back(make_pair(url, domain));
+    mtx.unlock();
 }
 
 void Scheduler::setPolitenessTime(int seconds) {

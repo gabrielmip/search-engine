@@ -2,15 +2,70 @@
 
 using namespace std;
 
+Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds, string outputPath) {
+    // seeding
+    schd.addUrls(seeds);
+    schd.setPolitenessTime(seconds);
+    
+    // output path prefix
+    filePrefix = outputPath;
+    if (outputPath[outputPath.size() - 1] != '/')
+        filePrefix += '/';
+    filePrefix += "pages_";
+
+    pageCounter = 0;
+    PAGES_PER_FILE = 5;
+    NUM_PAGES_TO_COLLECT = 50;
+
+    // workers
+    nWorkers = numWorkers;
+}
+
+void Crawler::start () {
+    for (int i = 0; i < nWorkers; i++) {
+        workers.push_back(thread(&Crawler::worker, this));
+    }
+
+    for(vector<thread>::iterator it = workers.begin(); it != workers.end(); it++) {
+        it->join();
+    }
+
+    cout << "Over." << endl;
+}
+
+bool Crawler::isStillCrawling () {
+    return pageCounter < NUM_PAGES_TO_COLLECT;
+}
+
+void Crawler::savePage (string url, string html) {
+    // html prep
+    replace(html.begin(), html.end(), '|', ' ');
+
+    bufferMtx.lock();
+    htmlBuffer += "||| " + url + " | " + html + " ";
+    pageCounter += 1;
+
+    // saves buffer to file
+    if (pageCounter == PAGES_PER_FILE) {
+        htmlBuffer += "|||";
+        string filename = filePrefix + to_string(pageCounter) + ".txt";
+        fstream fs;
+        fs.open(filename, fstream::out);
+        fs << htmlBuffer;
+        fs.close();
+        htmlBuffer = "";
+    }
+    bufferMtx.unlock();
+}
+
 // thread
-void worker (Crawler crw, Scheduler schd) {
+void Crawler::worker () {
     CkSpider spider;
-    Utils utils;
     string url, domain, html;
     int size, i;
 
     // signal used by crawler object to stop crawling
-    while (crw.isStillCrawling()) {
+    while (isStillCrawling()) {
         if (!schd.hasUnvisited()) {
             this_thread::sleep_for(chrono::milliseconds(100));
         } else {
@@ -22,9 +77,17 @@ void worker (Crawler crw, Scheduler schd) {
             string formattedDomain = "www." + domain;
             spider.Initialize(formattedDomain.c_str());
             spider.AddUnspidered(url.c_str());
-            spider.CrawlNext();
+            
+            // couldnt be crawled
+            if (!spider.CrawlNext()) {
+                schd.reAddUrl (url);
+                continue;
+            }
+
             html = spider.lastHtml(); // get page content
-            crw.savePage(url, html); // saves content
+            savePage(url, html); // saves content
+
+            cout << "Crawled URL " << url << ": " << html.size() << " bytes" << endl;
 
             // Inbound links
             size = spider.get_NumUnspidered();
@@ -44,55 +107,4 @@ void worker (Crawler crw, Scheduler schd) {
             spider.ClearOutboundLinks(); // Clears all outbound links
         }
     }
-}
-
-Crawler::Crawler () {}
-
-Crawler::Crawler (vector<string> seeds, int numWorkers, int politeness, string outputPath) {
-
-}
-
-void Crawler::seed (vector<string> seeds) {
-
-}
-
-void Crawler::start () {
-
-}
-
-void Crawler::setNumWorkers (int amount) {
-
-}
-
-void Crawler::setPolitenessTime (int seconds) {
-
-}
-
-void Crawler::setOutputFolder (string path) {
-
-}
-
-bool Crawler::isStillCrawling () {
-    return stillCrawling;
-}
-
-void Crawler::savePage (string url, string html) {
-    // html prep
-    replace(html.begin(), html.end(), '|', ' ');
-
-    bufferMtx.lock();
-    htmlBuffer += "||| " + url + " | " + html + " ";
-    fileCounter += 1;
-
-    // saves buffer to file
-    if (fileCounter == PAGES_PER_FILE) {
-        htmlBuffer += "|||";
-        string filename = filePrefix + to_string(fileCounter) + ".txt";
-        fstream fs;
-        fs.open(filename, fstream::out);
-        fs << htmlBuffer;
-        fs.close();
-        htmlBuffer = "";
-    }
-    bufferMtx.unlock();
 }
