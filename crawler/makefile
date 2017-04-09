@@ -1,17 +1,33 @@
+OBJ_DIR=./bin
+SRC_DIR=./src
+FLAGS=-std=c++11 -Wall -lpthread -lresolv
 UNAME_S := $(shell uname -s)
 TOP := $(shell pwd)
 ifeq ($(UNAME_S),Linux)
-    FLAGS += $(TOP)/chilkat/lib/libchilkat.so
+    FLAGS += $(TOP)/src/chilkat/lib/libchilkat.so
 endif
 ifeq ($(UNAME_S),Darwin)
-    FLAGS += chilkat/lib/libchilkat.a
+    FLAGS += src/chilkat/lib/libchilkat.a
 endif
 
-crawler: main.o
-	g++ -std=c++11 main.o $(FLAGS) -o crawler
+all: prep build
 
-main.o: main.cpp chilkat/include/CkSpider.h
-	g++ -std=c++11 -c main.cpp
+build: main crawler scheduler
+	g++ $(OBJ_DIR)/main.o $(OBJ_DIR)/crawler.o $(OBJ_DIR)/scheduler.o $(FLAGS) -o crawler
+
+main: crawler
+	g++ -c $(SRC_DIR)/main.cpp $(FLAGS) -o $(OBJ_DIR)/main.o
+
+crawler: scheduler
+	g++ -c $(SRC_DIR)/crawler.cpp $(FLAGS) -o $(OBJ_DIR)/crawler.o
+
+scheduler:
+	g++ -c $(SRC_DIR)/scheduler.cpp $(FLAGS) -o $(OBJ_DIR)/scheduler.o
+
+prep:
+	clear
+	mkdir -p $(OBJ_DIR)
+	mkdir -p ./documents
 
 clean:
-	rm *.o crawler
+	rm $(OBJ_DIR)/*.o crawler

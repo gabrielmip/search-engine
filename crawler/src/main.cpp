@@ -3,10 +3,17 @@
 #include <string>
 #include "chilkat/include/CkSpider.h"
 #include "chilkat/include/CkString.h"
+#include "scheduler.hpp"
+//#include "crawler.hpp"
 
 using namespace std;
 
 int main(){
+
+	Scheduler s;
+	s.popUrl();
+	return 0;
+
 	CkSpider spider;
 	string html, url;
 	vector<string> queue;
@@ -19,7 +26,7 @@ int main(){
 
 	html = spider.lastHtml(); // Saves HTML
 
-	cout << "Crawled HTML: " << html << '\n';
+	//cout << "Crawled HTML: " << html << '\n';
 
 	// Inbound links
 	for (int i = 0; i < size; i++) {
