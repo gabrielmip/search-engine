@@ -2,7 +2,7 @@
 #define SCHEDULER_HPP
 
 #include <iostream>
-#include <list>
+#include <vector>
 #include <queue>
 #include <unordered_map>
 #include <string>
@@ -19,7 +19,7 @@ class Compare {
 
 class Scheduler {
     private:
-        std::list<std::pair<std::string, std::string> > waitingUrls;
+        std::vector<std::pair<std::string, std::string> > waitingUrls;
         std::unordered_map<std::string, char> registeredUrls;
         std::unordered_map<std::string, time_t> domainLastVisit;
         std::mutex mtx;
@@ -38,7 +38,7 @@ class Scheduler {
         std::string popUrl ();
         void setPolitenessTime(int seconds);
         void addUrl (std::string url);
-        void addUrls (std::list<std::string> urls);
+        void addUrls (std::vector<std::string> urls);
 
 };
 

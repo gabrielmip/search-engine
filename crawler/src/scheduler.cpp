@@ -9,7 +9,7 @@ bool Scheduler::hasUnvisited () {
 }
 
 string Scheduler::popUrl () {
-    list<pair<string, string> >::iterator it;
+    vector<pair<string, string> >::iterator it;
     //priority_queue<pair<int, string> >::iterator it2;
 
     mtx.lock();
@@ -42,7 +42,7 @@ string Scheduler::popUrl () {
             urlsToCrawl.pop();
 
             string url = item.second;
-            string domain = utils.extractUrlDomain(url);
+            string domain = utils.getDomain(url);
 
             if (domainCanBeAccessed(domain)) {
                 updateDomainAccessTime(domain);
@@ -69,48 +69,46 @@ void Scheduler::updateDomainAccessTime (string domain) {
 }
 
 bool Scheduler::domainCanBeAccessed (string domain) {
-    try {
-        time_t lastVisit = domainLastVisit[domain];
+    unordered_map<string, time_t>::iterator it = domainLastVisit.find(domain);
+    if (it == domainLastVisit.end()) {
+        return true;
+    } else {
+        time_t lastVisit = it->second;
         time_t now;
         time(&now);
         if (now - lastVisit < POLITENESS_TIME) {
             return false;
         } else return true;
-    } catch (const out_of_range& oor) {
-        return true;
-    } catch (int e) {
-        cerr << "Exception n. " << e << " occurred. Exiting now." << endl;
-        exit (EXIT_FAILURE);
     }
 }
 
 bool Scheduler::hasBeenSeen (string url) {
-    try {
-        char c = registeredUrls[url];
-        return true;
-    } catch (const out_of_range& oor) {
+    if (registeredUrls.find(url) == registeredUrls.end()) {
         return false;
+    } else {
+        return true;
     }
 }
 
 void Scheduler::addUrl (string url) {
     if (!hasBeenSeen(url)) {
-        int nComponents = utils.countComponents(url);
+        cout << "URL added" << endl;
+        int depth = utils.countDepth(url);
 
         mtx.lock();
-        registeredUrls[url] = '';
-        urlsToCrawl.push(make_pair(nComponents, url));
+        registeredUrls[url] = ' ';
+        urlsToCrawl.push(make_pair(depth, url));
         mtx.unlock();
     }
 }
 
-void Scheduler::addUrls (list<string> urls) {
+void Scheduler::addUrls (vector<string> urls) {
     mtx.lock();
     for (int i = 0; i < urls.size(); i++) {
         if (!hasBeenSeen(urls[i])) {
-            int nComponents = utils.countComponents(urls[i]);
-            registeredUrls[urls[i]] = '';
-            urlsToCrawl.push(make_pair(nComponents, urls[i]));
+            int depth = utils.countDepth(urls[i]);
+            registeredUrls[urls[i]] = ' ';
+            urlsToCrawl.push(make_pair(depth, urls[i]));
         }
     }
     mtx.unlock();    

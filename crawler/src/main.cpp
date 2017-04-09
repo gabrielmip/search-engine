@@ -1,8 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include "chilkat/include/CkSpider.h"
-#include "chilkat/include/CkString.h"
 #include "scheduler.hpp"
 //#include "crawler.hpp"
 
@@ -11,11 +9,26 @@ using namespace std;
 int main(){
 
 	Scheduler s;
-	s.popUrl();
+	s.setPolitenessTime(30);
+	Utils u;
+	string url;
+	s.addUrl("http://www.chilkatsoft.com/topzerademais.html/");
+	s.addUrl("http://www.uol.com.br");
+	s.addUrl("http://www.jogos.tops.com");
+	s.addUrl("http://www.chilkatsoft.com/topzerademais/#!/?123+asd");
+	url = s.popUrl();
+	cout << "Popped URL: " << url << endl;
+	url = s.popUrl();
+	cout << "Popped URL: " << url << endl;
+	url = s.popUrl();
+	cout << "Popped URL: " << url << endl;
+	url = s.popUrl();
+	cout << "Popped URL: " << url << endl;
 	return 0;
 
 	CkSpider spider;
-	string html, url;
+	string html;
+	// string url;
 	vector<string> queue;
 
 	spider.Initialize("www.chilkatsoft.com");
