@@ -25,6 +25,8 @@ int main(int argc, char **argv){
 	int nworkers = atoi(argv[2]);
 	int seconds = 30;
 	string outputPath = argv[3];
+	int pages = atoi(argv[4]);
+	int pagesPerFile = atoi(argv[5]);
 	
 	/*
 	Scheduler s;
@@ -34,7 +36,7 @@ int main(int argc, char **argv){
 	}
 	*/
 
-	Crawler crawler (seeds, nworkers, seconds, outputPath);
+	Crawler crawler (seeds, nworkers, seconds, outputPath, pages, pagesPerFile);
 	crawler.start();
 
 	/*

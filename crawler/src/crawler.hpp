@@ -13,7 +13,7 @@
 
 class Crawler {
     public:
-        Crawler (std::vector<std::string> seeds, int numWorkers, int politeness, std::string outputPath);
+        Crawler (std::vector<std::string> seeds, int numWorkers, int politeness, std::string outputPath, int pages, int pagesPerFile);
         void start ();
         bool isStillCrawling ();
         void savePage (std::string url, std::string html);

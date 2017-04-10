@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds, string outputPath) {
+Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds, string outputPath, int pages, int pagesPerFile) {
     // seeding
     schd.addUrls(seeds);
     schd.setPolitenessTime(seconds);
@@ -35,7 +35,7 @@ void Crawler::start () {
 }
 
 bool Crawler::isStillCrawling () {
-    return pageCounter < NUM_PAGES_TO_COLLECT;
+    return pageCounter < NUM_PAGES_TO_COLLECT && schd.hasUnvisited();
 }
 
 void Crawler::savePage (string url, string html) {
@@ -69,7 +69,7 @@ void Crawler::worker () {
     // signal used by crawler object to stop crawling
     while (isStillCrawling()) {
         if (!schd.hasUnvisited()) {
-            this_thread::sleep_for(chrono::milliseconds(500));
+            this_thread::sleep_for(chrono::milliseconds(100));
         } else {
             url = schd.popUrl(); // gets uncrawled URL from scheduler
             if (url.size() == 0)
@@ -89,7 +89,7 @@ void Crawler::worker () {
             html = spider.lastHtml(); // get page content
             savePage(url, html); // saves content
 
-            cout << "Crawled URL " << url << ": " << html.size() << " bytes" << endl;
+            cout << "Crawled URL " << url << ": " << html.size() << " bytes; waitingUrls size: " << schd.waitingUrls.size() << endl;
 
             // Inbound links
             size = spider.get_NumUnspidered();

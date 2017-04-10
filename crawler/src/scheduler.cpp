@@ -2,7 +2,22 @@
 
 using namespace std;
 
-Scheduler::Scheduler () {}
+Scheduler::Scheduler () {
+    allowedUrls.push_back(".br");
+    allowedUrls.push_back("//br.");
+    allowedUrls.push_back("globo.com");
+    allowedUrls.push_back("ingresso.com");
+    allowedUrls.push_back("r7.com");
+    allowedUrls.push_back("amocinema.com");
+    
+    /*
+    notAllowedUrls.push_back("");
+    notAllowedUrls.push_back();
+    notAllowedUrls.push_back();
+    notAllowedUrls.push_back();
+    notAllowedUrls.push_back();
+    */
+}
 
 bool Scheduler::hasUnvisited () {
     return urlsToCrawl.size() > 0 || waitingUrls.size() > 0;
@@ -89,8 +104,33 @@ bool Scheduler::hasBeenSeen (string url) {
     }
 }
 
+bool Scheduler::isUrlAllowed (string url) {
+    bool allow = false;
+    bool disallow = false;
+    
+    int pos;
+    for (int i = 0; i < allowedUrls.size(); i++) {
+        pos = url.find(allowedUrls[i]);
+        if (pos != string::npos) { // found expression
+            allow = true;
+            break;
+        }
+    }
+
+    for (int i = 0; i < notAllowedUrls.size(); i++) {
+        pos = url.find(notAllowedUrls[i]);
+        if (pos != string::npos) { // found expression
+            disallow = true;
+            break;
+        }
+    }
+
+    return allow && !disallow;
+}
+
 void Scheduler::addUrl (string url) {
     string formattedUrl = utils.formatUrl(url);
+    if (!isUrlAllowed(formattedUrl)) return;
 
     mtx.lock();
     if (!hasBeenSeen(formattedUrl)) {
