@@ -2,6 +2,13 @@
 
 using namespace std;
 
+Utils::Utils () {
+    indexEndings.push_back("/index.html");
+    indexEndings.push_back("/index.htm");
+    indexEndings.push_back("/index.php");
+    indexEndings.push_back("/");
+}
+
 string Utils::getDomain(string url) {
     if (url.size() == 0) return "";
 
@@ -42,4 +49,22 @@ int Utils::countDepth (string url) {
     if (url[i-1] != '/') depth++;
 
     return depth;
+}
+
+string Utils::formatUrl (string url) {
+    // lower case
+    transform(url.begin(), url.end(), url.begin(), ::tolower);
+
+    // index endings (index.html, index.php, etc)
+    int pos, exStartPos;
+    for (int i = 0; i < indexEndings.size(); i++) {
+        exStartPos = url.size() - indexEndings[i].size();
+        pos = url.find(indexEndings[i], exStartPos);
+        if (pos != string::npos) { // found expression
+            url = url.substr(0, exStartPos);
+            break;
+        }
+    }
+
+    return url;
 }

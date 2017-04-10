@@ -25,6 +25,15 @@ int main(int argc, char **argv){
 	int nworkers = atoi(argv[2]);
 	int seconds = 30;
 	string outputPath = argv[3];
+	
+	/*
+	Scheduler s;
+	s.addUrls(seeds);
+	while(s.hasUnvisited()) {
+		cout << s.popUrl() << endl;
+	}
+	*/
+
 	Crawler crawler (seeds, nworkers, seconds, outputPath);
 	crawler.start();
 

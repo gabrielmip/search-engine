@@ -10,10 +10,9 @@ bool Scheduler::hasUnvisited () {
 
 string Scheduler::popUrl () {
     vector<pair<string, string> >::iterator it;
-    //priority_queue<pair<int, string> >::iterator it2;
 
     mtx.lock();
-    
+
     // checks if any page waiting to be crawled
     // because of politeness is now ready
     for (it = waitingUrls.begin(); it != waitingUrls.end(); it++) {
@@ -91,28 +90,24 @@ bool Scheduler::hasBeenSeen (string url) {
 }
 
 void Scheduler::addUrl (string url) {
-    if (!hasBeenSeen(url)) {
-        int depth = utils.countDepth(url);
+    string formattedUrl = utils.formatUrl(url);
 
-        mtx.lock();
-        registeredUrls[url] = ' ';
-        urlsToCrawl.push(make_pair(depth, url));
-        mtx.unlock();
+    mtx.lock();
+    if (!hasBeenSeen(formattedUrl)) {
+        int depth = utils.countDepth(formattedUrl);
+        registeredUrls[formattedUrl] = ' ';
+        urlsToCrawl.push(make_pair(depth, formattedUrl));
     }
+    mtx.unlock();
 }
 
 void Scheduler::addUrls (vector<string> urls) {
-    mtx.lock();
     for (int i = 0; i < urls.size(); i++) {
-        if (!hasBeenSeen(urls[i])) {
-            int depth = utils.countDepth(urls[i]);
-            registeredUrls[urls[i]] = ' ';
-            urlsToCrawl.push(make_pair(depth, urls[i]));
-        }
+        addUrl(urls[i]);
     }
-    mtx.unlock();    
 }
 
+// assumes it is a well formed url taken from the scheduler
 void Scheduler::reAddUrl (string url) {
     mtx.lock();
     string domain = utils.getDomain(url);

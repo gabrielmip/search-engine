@@ -14,6 +14,7 @@ Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds, string outp
     filePrefix += "pages_";
 
     pageCounter = 0;
+    fileCounter = 0;
     PAGES_PER_FILE = 5;
     NUM_PAGES_TO_COLLECT = 50;
 
@@ -43,12 +44,13 @@ void Crawler::savePage (string url, string html) {
 
     bufferMtx.lock();
     htmlBuffer += "||| " + url + " | " + html + " ";
-    pageCounter += 1;
+    pageCounter++;
 
     // saves buffer to file
-    if (pageCounter == PAGES_PER_FILE) {
+    if (pageCounter == PAGES_PER_FILE || pageCounter >= NUM_PAGES_TO_COLLECT) {
         htmlBuffer += "|||";
-        string filename = filePrefix + to_string(pageCounter) + ".txt";
+        fileCounter++;
+        string filename = filePrefix + to_string(fileCounter) + ".txt";
         fstream fs;
         fs.open(filename, fstream::out);
         fs << htmlBuffer;
@@ -67,12 +69,12 @@ void Crawler::worker () {
     // signal used by crawler object to stop crawling
     while (isStillCrawling()) {
         if (!schd.hasUnvisited()) {
-            this_thread::sleep_for(chrono::milliseconds(100));
+            this_thread::sleep_for(chrono::milliseconds(500));
         } else {
             url = schd.popUrl(); // gets uncrawled URL from scheduler
             if (url.size() == 0)
                 continue;
-            
+
             domain = utils.getDomain(url);
             string formattedDomain = "www." + domain;
             spider.Initialize(formattedDomain.c_str());

@@ -24,6 +24,7 @@ class Crawler {
         std::string htmlBuffer;
         std::string filePrefix;
         int pageCounter;
+        int fileCounter;
         std::mutex bufferMtx;
         int PAGES_PER_FILE;
         int NUM_PAGES_TO_COLLECT;
