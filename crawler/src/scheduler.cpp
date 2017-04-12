@@ -10,13 +10,13 @@ Scheduler::Scheduler () {
     allowedUrls.push_back("r7.com");
     allowedUrls.push_back("amocinema.com");
     
-    /*
-    notAllowedUrls.push_back("");
-    notAllowedUrls.push_back();
-    notAllowedUrls.push_back();
-    notAllowedUrls.push_back();
-    notAllowedUrls.push_back();
-    */
+    notAllowedUrls.push_back("<%"); // JS TEMPLATES
+    notAllowedUrls.push_back("{{");
+    notAllowedUrls.push_back("addtoany.com/add_to");
+    notAllowedUrls.push_back("migre.me");
+    notAllowedUrls.push_back("bit.ly");
+    notAllowedUrls.push_back("share=");
+    notAllowedUrls.push_back("www.facebook.com/sharer.php");
 }
 
 bool Scheduler::hasUnvisited () {
@@ -46,26 +46,27 @@ string Scheduler::popUrl () {
     // if no page waiting the politeness time,
     // looks for a page to collect in the main
     // url list
+
     if (urlsToCrawl.size() == 0) {
         mtx.unlock();
         return ""; // to be treated on thread function
-    } else {
-        pair<int, string> item;
-        while (urlsToCrawl.size() > 0) {
-            item = urlsToCrawl.top();
-            urlsToCrawl.pop();
+    }
+    
+    pair<int, string> item;
+    while (urlsToCrawl.size() > 0) {
+        item = urlsToCrawl.top();
+        urlsToCrawl.pop();
 
-            string url = item.second;
-            string domain = utils.getDomain(url);
+        string url = item.second;
+        string domain = utils.getDomain(url);
 
-            if (domainCanBeAccessed(domain)) {
-                updateDomainAccessTime(domain);
-                mtx.unlock();
-                return url;
-            } else {
-                // url cant be accessed bc of politeness
-                waitingUrls.push_back(make_pair(url, domain));
-            }
+        if (domainCanBeAccessed(domain)) {
+            updateDomainAccessTime(domain);
+            mtx.unlock();
+            return url;
+        } else {
+            // url cant be accessed bc of politeness
+            waitingUrls.push_back(make_pair(url, domain));
         }
     }
 
@@ -131,10 +132,10 @@ bool Scheduler::isUrlAllowed (string url) {
 void Scheduler::addUrl (string url) {
     string formattedUrl = utils.formatUrl(url);
     if (!isUrlAllowed(formattedUrl)) return;
+    int depth = utils.countDepth(formattedUrl);
 
     mtx.lock();
     if (!hasBeenSeen(formattedUrl)) {
-        int depth = utils.countDepth(formattedUrl);
         registeredUrls[formattedUrl] = ' ';
         urlsToCrawl.push(make_pair(depth, formattedUrl));
     }

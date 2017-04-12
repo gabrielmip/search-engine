@@ -21,54 +21,59 @@ vector<string> readSeedFile (string path) {
 
 int main(int argc, char **argv){
 
+	
 	vector<string> seeds = readSeedFile(argv[1]);
 	int nworkers = atoi(argv[2]);
 	int seconds = 30;
 	string outputPath = argv[3];
 	int pages = atoi(argv[4]);
 	int pagesPerFile = atoi(argv[5]);
+	string logPath = argv[6];
 	
 	/*
+	string url;
+	Utils u;
+	CkSpider spider;
 	Scheduler s;
 	s.addUrls(seeds);
 	while(s.hasUnvisited()) {
-		cout << s.popUrl() << endl;
+		url = s.popUrl();
+		cout << url << endl;
+		cout << u.getDomain(url) << endl;
+		
+		spider.Initialize(spider.getBaseDomain(url.c_str()));
+		spider.AddUnspidered(url.c_str());
+		if (spider.CrawlNext()) {
+			cout << "worked" << endl;
+		} else {
+			cout << "didnt work" << endl;
+		}
 	}
 	*/
 
-	Crawler crawler (seeds, nworkers, seconds, outputPath, pages, pagesPerFile);
-	crawler.start();
 
 	/*
+	Scheduler s;
+	Utils u;
+	string url, formatted;
 	CkSpider spider;
-	string html;
-	// string url;
-	vector<string> queue;
-
-	spider.Initialize("www.chilkatsoft.com");
-	spider.AddUnspidered("http://www.chilkatsoft.com/");
-	spider.CrawlNext(); // bool return
-
-	int size = spider.get_NumUnspidered();
-
-	html = spider.lastHtml(); // Saves HTML
-
-	//cout << "Crawled HTML: " << html << '\n';
-
-	// Inbound links
-	for (int i = 0; i < size; i++) {
-		url = spider.getUnspideredUrl(0);
-		spider.SkipUnspidered(0); // Removes inbound link from local queue
-		cout << "Crawled URL: " << url << '\n';
+	s.addUrls(seeds);
+	while(s.hasUnvisited()) {
+		url = s.popUrl();
+		formatted = u.formatUrl(url);
+		spider.Initialize(u.getDomain(formatted).c_str());
+		spider.AddUnspidered(formatted.c_str());
+		if (spider.CrawlNext()) {
+			cout << "worked "<< endl;
+		} else {
+			cout << " didnt work"<< endl;
+		}
+		cout << u.getDomain(formatted) << endl;
+		cout << u.formatUrl(formatted) << endl;
 	}
-
-	// Outbound links
-	size = spider.get_NumOutboundLinks();
-	for (int i = 0; i < size; i++) {
-		url = spider.getOutboundLink(i);
-		cout << "Crawled outbound URL: " << url << '\n';
-	}
-
-	spider.ClearOutboundLinks(); // Clears all outbound links
 	*/
+	
+
+	Crawler crawler (seeds, nworkers, seconds, outputPath, pages, pagesPerFile, logPath);
+	crawler.start();
 }
