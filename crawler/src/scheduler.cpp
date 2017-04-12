@@ -2,7 +2,21 @@
 
 using namespace std;
 
-Scheduler::Scheduler () {
+// to use on max_min_heap
+inline bool operator<( const tuple<string, int, time_t>& a, const tuple<string, int, time_t>& b) {
+    if (get<1>(a) < get<1>(b)) {
+        return true;    
+    } else if (get<1>(a)-2 < get<1>(b)+2 && get<2>(a) < get<2>(b)) { // a little range to avoid starving
+        return true;
+    }
+    return false;
+}
+
+
+
+Scheduler::Scheduler (int size) {
+    MAX_HEAP_SIZE = size;
+
     allowedUrls.push_back(".br");
     allowedUrls.push_back("//br.");
     allowedUrls.push_back("globo.com");
@@ -20,54 +34,50 @@ Scheduler::Scheduler () {
 }
 
 bool Scheduler::hasUnvisited () {
-    return urlsToCrawl.size() > 0 || waitingUrls.size() > 0;
+    return (urlsToCrawl.size() > 0);
 }
 
 string Scheduler::popUrl () {
-    vector<pair<string, string> >::iterator it;
-
-    mtx.lock();
-
-    // checks if any page waiting to be crawled
-    // because of politeness is now ready
-    for (it = waitingUrls.begin(); it != waitingUrls.end(); it++) {
-        string url = it->first;
-        string domain = it->second;
-
-        if (domainCanBeAccessed(domain)) {
-            updateDomainAccessTime(domain);
-            waitingUrls.erase(it);
-            mtx.unlock();
-            return url;
-        }
-        
-    }
-
-    // if no page waiting the politeness time,
-    // looks for a page to collect in the main
-    // url list
-
+    
     if (urlsToCrawl.size() == 0) {
-        mtx.unlock();
         return ""; // to be treated on thread function
     }
     
-    pair<int, string> item;
+    string url, domain;
+    int penalty;
+    time_t lastVisit;
+    time_t now;
+    time(&now);
+    tuple<string, int, time_t> item;
+    vector<tuple<string, int, time_t> > toAddLater;
+    
+    mtx.lock();
+    
+    // cout << "while"<<endl;
+    
     while (urlsToCrawl.size() > 0) {
-        item = urlsToCrawl.top();
-        urlsToCrawl.pop();
+        tie (url, penalty, lastVisit) = urlsToCrawl.min();
+        urlsToCrawl.pop_min();
 
-        string url = item.second;
-        string domain = utils.getDomain(url);
+        //cout << url << ' ' << penalty << ' ' << now - lastVisit << endl;
 
-        if (domainCanBeAccessed(domain)) {
+        if (lastVisit == -1 || now - lastVisit >= POLITENESS_TIME) {
+            domain = utils.getDomain(url);
             updateDomainAccessTime(domain);
+            for (int i = 0; i < toAddLater.size(); i++) {
+                urlsToCrawl.push(toAddLater[i]);
+            }
             mtx.unlock();
+            toAddLater.clear();
             return url;
         } else {
-            // url cant be accessed bc of politeness
-            waitingUrls.push_back(make_pair(url, domain));
+            penalty += 1;
+            toAddLater.push_back(make_tuple(url, penalty, lastVisit));
         }
+    }
+
+    for (int i = 0; i < toAddLater.size(); i++) {
+        urlsToCrawl.push(toAddLater[i]);
     }
 
     // if has gotten to here, wasn't able to successfully
@@ -77,18 +87,33 @@ string Scheduler::popUrl () {
 }
 
 void Scheduler::updateDomainAccessTime (string domain) {
-    // get current time
+    unordered_map<string, pair<int, time_t> >::iterator it = domainLastVisit.find(domain);
     time_t now;
     time(&now);
-    domainLastVisit[domain] = now;
+    if (it != domainLastVisit.end()) {
+        domainLastVisit[domain].first += 1;
+        domainLastVisit[domain].second = now;
+    } else {
+        domainLastVisit[domain] = make_pair(1, now);
+    }
+}
+
+pair<int, time_t> Scheduler::getDomainInfo (string domain) {
+    unordered_map<string, pair<int, time_t> >::iterator it = domainLastVisit.find(domain);
+    if (it != domainLastVisit.end()) {
+        return it->second;
+    } else {
+        return make_pair(1, -1);
+    }
 }
 
 bool Scheduler::domainCanBeAccessed (string domain) {
-    unordered_map<string, time_t>::iterator it = domainLastVisit.find(domain);
+    unordered_map<string, pair<int, time_t> >::iterator it = domainLastVisit.find(domain);
     if (it == domainLastVisit.end()) {
         return true;
     } else {
-        time_t lastVisit = it->second;
+        pair<int, time_t> domainLog = it->second;
+        time_t lastVisit = domainLog.second;
         time_t now;
         time(&now);
         if (now - lastVisit < POLITENESS_TIME) {
@@ -136,8 +161,12 @@ void Scheduler::addUrl (string url) {
 
     mtx.lock();
     if (!hasBeenSeen(formattedUrl)) {
+        if (urlsToCrawl.size() > MAX_HEAP_SIZE)
+            urlsToCrawl.pop_max();
+        
+        pair<int, time_t> domainInfo = getDomainInfo(utils.getDomain(formattedUrl));
+        urlsToCrawl.push(make_tuple(url, domainInfo.first, domainInfo.second));
         registeredUrls[formattedUrl] = ' ';
-        urlsToCrawl.push(make_pair(depth, formattedUrl));
     }
     mtx.unlock();
 }
@@ -151,8 +180,8 @@ void Scheduler::addUrls (vector<string> urls) {
 // assumes it is a well formed url taken from the scheduler
 void Scheduler::reAddUrl (string url) {
     mtx.lock();
-    string domain = utils.getDomain(url);
-    waitingUrls.push_back(make_pair(url, domain));
+    pair<int, time_t> domainInfo = getDomainInfo(utils.getDomain(url));
+    urlsToCrawl.push(make_tuple(url, domainInfo.first, domainInfo.second));
     mtx.unlock();
 }
 

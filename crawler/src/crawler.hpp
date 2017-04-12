@@ -13,14 +13,15 @@
 
 class Crawler {
     public:
-        Crawler (std::vector<std::string> seeds, int numWorkers, int politeness, std::string outputPath, int pages, int pagesPerFile, std::string logPath);
+        Crawler (std::vector<std::string> seeds, int numWorkers, int politeness, std::string outputPath, 
+                            int pages, int pagesPerFile, std::string logPath);
         void start ();
         bool isStillCrawling ();
         void savePage (std::string url, std::string html);
 
     private:
         std::vector<std::thread> workers;
-        Scheduler schd;
+        Scheduler *schd;
         std::string htmlBuffer;
         std::string filePrefix;
         int pageCounter;

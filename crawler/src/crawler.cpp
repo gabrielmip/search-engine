@@ -4,8 +4,9 @@ using namespace std;
 
 Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds, string outputPath, int pages, int pagesPerFile, string logPath) {
     // seeding
-    schd.addUrls(seeds);
-    schd.setPolitenessTime(seconds);
+    schd = new Scheduler(10);
+    schd->addUrls(seeds);
+    schd->setPolitenessTime(seconds);
     
     // output path prefix
     filePrefix = outputPath;
@@ -38,7 +39,7 @@ void Crawler::start () {
 }
 
 bool Crawler::isStillCrawling () {
-    return pageCounter < NUM_PAGES_TO_COLLECT && schd.hasUnvisited();
+    return pageCounter < NUM_PAGES_TO_COLLECT && schd->hasUnvisited();
 }
 
 bool bothAreSpaces (char lhs, char rhs) {
@@ -54,7 +55,7 @@ void Crawler::savePage (string url, string html) {
     html.erase(newEnd, html.end());
 
     // removes script tags
-    
+
 
     bufferMtx.lock();
     htmlBuffer += "||| " + url + " | " + html + " ";
@@ -87,13 +88,13 @@ void Crawler::worker () {
 
     // signal used by crawler object to stop crawling
     while (isStillCrawling()) {
-        if (!schd.hasUnvisited()) {
+        if (!schd->hasUnvisited()) {
             this_thread::sleep_for(chrono::milliseconds(100));
             continue;
         }
 
 
-        url = schd.popUrl(); // gets uncrawled URL from scheduler
+        url = schd->popUrl(); // gets uncrawled URL from scheduler
         if (url.size() == 0)
             continue;
 
@@ -103,20 +104,20 @@ void Crawler::worker () {
         
         // couldnt be crawled
         if (!spider.CrawlNext()) {
-            schd.reAddUrl (url);
+            schd->reAddUrl (url);
             continue;
         }
 
         html = spider.lastHtml(); // get page content
         savePage(url, html); // saves content
 
-        cout << "Pg. " << pageCounter << " (" << schd.waitingUrls.size() << "): " << url << endl;
+        cout << "Pg. " << pageCounter  << ": " << url << endl;
 
         // Inbound links
         size = spider.get_NumUnspidered();
         for (i = 0; i < size; i++) {
             url = spider.getUnspideredUrl(0);
-            schd.addUrl(url);
+            schd->addUrl(url);
             spider.SkipUnspidered(0); // Removes inbound link from local queue
         }
 
@@ -124,7 +125,7 @@ void Crawler::worker () {
         size = spider.get_NumOutboundLinks();
         for (i = 0; i < size; i++) {
             url = spider.getOutboundLink(i);
-            schd.addUrl(url);
+            schd->addUrl(url);
         }
 
         spider.ClearOutboundLinks(); // Clears all outbound links

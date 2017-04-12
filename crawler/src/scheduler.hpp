@@ -8,7 +8,9 @@
 #include <string>
 #include <ctime>
 #include <mutex>
+#include <tuple>
 #include "utils.hpp"
+#include "min_max_heap.h"
 
 class Compare {
     public:
@@ -20,29 +22,31 @@ class Compare {
 class Scheduler {
     private:
         std::unordered_map<std::string, char> registeredUrls;
-        std::unordered_map<std::string, time_t> domainLastVisit;
+        std::unordered_map<std::string, std::pair<int, std::time_t> > domainLastVisit;
+        // std::vector<std::pair<std::string, std::string> > waitingUrls;
         std::mutex mtx;
-        std::priority_queue<std::pair<int, std::string>, std::vector<std::pair<int, std::string> >, Compare> urlsToCrawl;
         std::vector<std::string> allowedUrls;
         std::vector<std::string> notAllowedUrls;
+        MinMaxHeap<std::tuple<std::string, int, std::time_t> > urlsToCrawl;
         
         bool isUrlAllowed (std::string url);
         void updateDomainAccessTime (std::string domain);
         bool domainCanBeAccessed (std::string domain);
         bool hasBeenSeen (std::string url);
         int POLITENESS_TIME; // seconds
+        int MAX_HEAP_SIZE;
         Utils utils;
         
     
     public:
-        Scheduler ();
-        std::vector<std::pair<std::string, std::string> > waitingUrls;
+        Scheduler (int size);
         bool hasUnvisited ();
         std::string popUrl ();
         void setPolitenessTime(int seconds);
         void addUrl (std::string url);
         void addUrls (std::vector<std::string> urls);
         void reAddUrl (std::string url);
+        std::pair<int, std::time_t> getDomainInfo (std::string domain);
 
 };
 

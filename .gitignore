@@ -37,3 +37,5 @@ crawler/bin/*
 
 crawler/documents/
 crawler/.vscode
+
+crawler/logs/
