@@ -19,23 +19,29 @@ class Compare {
         }
 };
 
+typedef struct {
+    std::string domain;
+    std::string url;
+    int depth;
+    int penalty;
+} PageEntity;
+
 class Scheduler {
     private:
         std::unordered_map<std::string, char> registeredUrls;
         std::unordered_map<std::string, std::pair<int, std::time_t> > domainLastVisit;
-        // std::vector<std::pair<std::string, std::string> > waitingUrls;
-        std::mutex mtx;
         std::vector<std::string> allowedUrls;
         std::vector<std::string> notAllowedUrls;
-        MinMaxHeap<std::tuple<std::string, int, std::time_t> > urlsToCrawl;
+        MinMaxHeap<PageEntity> urlsToCrawl;
+        std::mutex mtx;
+        int POLITENESS_TIME; // seconds
+        int MAX_HEAP_SIZE;
+        Utils utils;
         
         bool isUrlAllowed (std::string url);
         void updateDomainAccessTime (std::string domain);
         bool domainCanBeAccessed (std::string domain);
-        bool hasBeenSeen (std::string url);
-        int POLITENESS_TIME; // seconds
-        int MAX_HEAP_SIZE;
-        Utils utils;
+        bool hasSeen (std::string url);
         
     
     public:

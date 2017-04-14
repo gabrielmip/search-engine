@@ -3,16 +3,14 @@
 using namespace std;
 
 // to use on max_min_heap
-inline bool operator<( const tuple<string, int, time_t>& a, const tuple<string, int, time_t>& b) {
-    if (get<1>(a) < get<1>(b)) {
+inline bool operator<( const PageEntity& a, const PageEntity& b) {
+    if (a.depth < b.depth) {
         return true;    
-    } else if (get<1>(a)-2 < get<1>(b)+2 && get<2>(a) < get<2>(b)) { // a little range to avoid starving
+    } else if (a.depth == b.depth && a.penalty < b.penalty) {
         return true;
     }
     return false;
 }
-
-
 
 Scheduler::Scheduler (int size) {
     MAX_HEAP_SIZE = size;
@@ -43,36 +41,33 @@ string Scheduler::popUrl () {
         return ""; // to be treated on thread function
     }
     
-    string url, domain;
-    int penalty;
-    time_t lastVisit;
+    PageEntity page;
+    pair<int, time_t> domainInfo;
+    vector<PageEntity> toAddLater;
     time_t now;
     time(&now);
-    tuple<string, int, time_t> item;
-    vector<tuple<string, int, time_t> > toAddLater;
     
     mtx.lock();
     
     // cout << "while"<<endl;
     
     while (urlsToCrawl.size() > 0) {
-        tie (url, penalty, lastVisit) = urlsToCrawl.min();
+        page = urlsToCrawl.min();
         urlsToCrawl.pop_min();
+        domainInfo = getDomainInfo(page.domain);
 
-        //cout << url << ' ' << penalty << ' ' << now - lastVisit << endl;
-
-        if (lastVisit == -1 || now - lastVisit >= POLITENESS_TIME) {
-            domain = utils.getDomain(url);
-            updateDomainAccessTime(domain);
+        if (domainInfo.second == -1 || now - domainInfo.second >= POLITENESS_TIME) {
+            updateDomainAccessTime(page.domain);
             for (int i = 0; i < toAddLater.size(); i++) {
                 urlsToCrawl.push(toAddLater[i]);
             }
             mtx.unlock();
             toAddLater.clear();
-            return url;
+            //cout << page.penalty << " | ";
+            return page.url;
         } else {
-            penalty += 1;
-            toAddLater.push_back(make_tuple(url, penalty, lastVisit));
+            page.penalty += 1;
+            toAddLater.push_back(page);
         }
     }
 
@@ -122,7 +117,7 @@ bool Scheduler::domainCanBeAccessed (string domain) {
     }
 }
 
-bool Scheduler::hasBeenSeen (string url) {
+bool Scheduler::hasSeen (string url) {
     if (registeredUrls.find(url) == registeredUrls.end()) {
         return false;
     } else {
@@ -160,13 +155,25 @@ void Scheduler::addUrl (string url) {
     int depth = utils.countDepth(formattedUrl);
 
     mtx.lock();
-    if (!hasBeenSeen(formattedUrl)) {
-        if (urlsToCrawl.size() > MAX_HEAP_SIZE)
+    if (!hasSeen(formattedUrl)) {
+        if (urlsToCrawl.size() >= MAX_HEAP_SIZE)
             urlsToCrawl.pop_max();
         
-        pair<int, time_t> domainInfo = getDomainInfo(utils.getDomain(formattedUrl));
-        urlsToCrawl.push(make_tuple(url, domainInfo.first, domainInfo.second));
+        PageEntity p;
+        p.url = formattedUrl;
+        p.domain = utils.getDomain(formattedUrl);
+        pair<int, time_t> domainInfo = getDomainInfo(p.domain);
+        domainInfo.first += 1; // updated penalty for domain
+        p.penalty = domainInfo.first; 
+        p.depth = depth;
+        
+        urlsToCrawl.push(p);
+        
+        // says it has now seen the url
         registeredUrls[formattedUrl] = ' ';
+
+        // updates domain penalty
+        domainLastVisit[p.domain] = domainInfo;
     }
     mtx.unlock();
 }
@@ -179,9 +186,17 @@ void Scheduler::addUrls (vector<string> urls) {
 
 // assumes it is a well formed url taken from the scheduler
 void Scheduler::reAddUrl (string url) {
+    PageEntity p;
+    p.domain = utils.getDomain(url);
+    p.depth = utils.countDepth(url);
+
     mtx.lock();
-    pair<int, time_t> domainInfo = getDomainInfo(utils.getDomain(url));
-    urlsToCrawl.push(make_tuple(url, domainInfo.first, domainInfo.second));
+    pair<int, time_t> domainInfo = getDomainInfo(p.domain);
+    domainInfo.first += 1;
+    domainLastVisit[p.domain] = domainInfo;
+
+    p.penalty = domainInfo.first;
+    urlsToCrawl.push(p);
     mtx.unlock();
 }
 

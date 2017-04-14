@@ -2,7 +2,9 @@
 
 using namespace std;
 
-Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds, string outputPath, int pages, int pagesPerFile, string logPath) {
+Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds, 
+                  string outputPath, int pages, int pagesPerFile, string logPath) {
+    
     // seeding
     schd = new Scheduler(10);
     schd->addUrls(seeds);
@@ -54,24 +56,23 @@ void Crawler::savePage (string url, string html) {
     string::iterator newEnd = unique(html.begin(), html.end(), bothAreSpaces);
     html.erase(newEnd, html.end());
 
-    // removes script tags
-
-
     bufferMtx.lock();
-    htmlBuffer += "||| " + url + " | " + html + " ";
+    //htmlBuffer += "||| " + url + " | " + html + " ";
     utils.log(url);
     pageCounter++;
 
     // saves buffer to file
     if (pageCounter % PAGES_PER_FILE == PAGES_PER_FILE - 1 || pageCounter >= NUM_PAGES_TO_COLLECT) {
-        htmlBuffer += "|||";
         fileCounter++;
+        /*
+        htmlBuffer += "|||";
         string filename = filePrefix + to_string(fileCounter) + ".txt";
         fstream fs;
         fs.open(filename, fstream::out);
         fs << htmlBuffer;
         fs.close();
         htmlBuffer = "";
+        */
         utils.dumpLog();
     }
     bufferMtx.unlock();
@@ -105,13 +106,19 @@ void Crawler::worker () {
         // couldnt be crawled
         if (!spider.CrawlNext()) {
             schd->reAddUrl (url);
+            cout << "^";
             continue;
         }
 
         html = spider.lastHtml(); // get page content
         savePage(url, html); // saves content
 
-        cout << "Pg. " << pageCounter  << ": " << url << endl;
+        if (pageCounter % 10000 == 0)
+            cout << endl << "Pg. " << pageCounter  << ": " << url;
+        else if (pageCounter % 3333 == 0)
+            cout << ".";
+        else if (pageCounter % 6666 == 0)
+            cout << ".";
 
         // Inbound links
         size = spider.get_NumUnspidered();

@@ -53,7 +53,7 @@ int main(int argc, char **argv){
 
 
 	/*
-	Scheduler s;
+	Scheduler s (10);
 	Utils u;
 	string url, formatted;
 	CkSpider spider;
@@ -72,6 +72,7 @@ int main(int argc, char **argv){
 		cout << u.formatUrl(formatted) << endl;
 	}
 	*/
+	
 	
 
 	Crawler crawler (seeds, nworkers, seconds, outputPath, pages, pagesPerFile, logPath);
