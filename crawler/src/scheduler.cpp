@@ -29,6 +29,8 @@ Scheduler::Scheduler (int size) {
     notAllowedUrls.push_back("share=");
     notAllowedUrls.push_back("facebook.com/sharer.php");
     notAllowedUrls.push_back("twitter.com/share");
+    notAllowedUrls.push_back("reddit.com/submit");
+    notAllowedUrls.push_back("validator.w3.org/check");
 }
 
 bool Scheduler::hasUnvisited () {

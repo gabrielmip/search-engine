@@ -6,7 +6,7 @@ Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds,
                   string outputPath, int pages, int pagesPerFile, string logPath) {
     
     // seeding
-    schd = new Scheduler(10);
+    schd = new Scheduler(1000000);
     schd->addUrls(seeds);
     schd->setPolitenessTime(seconds);
     
@@ -79,8 +79,8 @@ void Crawler::savePage (string url, string html) {
 // thread
 void Crawler::worker () {
     CkSpider spider;
-    spider.put_AvoidHttps(false);
-    spider.put_ConnectTimeout(20);
+    spider.put_AvoidHttps(true);
+    spider.put_ConnectTimeout(5);
 
     string url, domain, html;
     int size, i;
@@ -104,7 +104,7 @@ void Crawler::worker () {
         // couldnt be crawled
         if (!spider.CrawlNext()) {
             schd->reAddUrl (url);
-            cout << endl << "ERR: " << url;
+            cout << endl << "ERR: " << url << " - " << domain;
             continue;
         }
 
