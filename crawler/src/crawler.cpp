@@ -57,22 +57,20 @@ void Crawler::savePage (string url, string html) {
     html.erase(newEnd, html.end());
 
     bufferMtx.lock();
-    //htmlBuffer += "||| " + url + " | " + html + " ";
+    htmlBuffer += "||| " + url + " | " + html + " ";
     utils.log(url);
     pageCounter++;
 
     // saves buffer to file
     if (pageCounter % PAGES_PER_FILE == PAGES_PER_FILE - 1 || pageCounter >= NUM_PAGES_TO_COLLECT) {
         fileCounter++;
-        /*
         htmlBuffer += "|||";
         string filename = filePrefix + to_string(fileCounter) + ".txt";
         fstream fs;
         fs.open(filename, fstream::out);
         fs << htmlBuffer;
         fs.close();
-        htmlBuffer = "";
-        */
+        htmlBuffer.clear();
         utils.dumpLog();
     }
     bufferMtx.unlock();
@@ -82,7 +80,7 @@ void Crawler::savePage (string url, string html) {
 void Crawler::worker () {
     CkSpider spider;
     spider.put_AvoidHttps(false);
-    spider.put_ConnectTimeout(5);
+    spider.put_ConnectTimeout(20);
 
     string url, domain, html;
     int size, i;
@@ -106,19 +104,14 @@ void Crawler::worker () {
         // couldnt be crawled
         if (!spider.CrawlNext()) {
             schd->reAddUrl (url);
-            cout << "^";
+            cout << endl << "ERR: " << url;
             continue;
         }
 
         html = spider.lastHtml(); // get page content
         savePage(url, html); // saves content
 
-        if (pageCounter % 10000 == 0)
-            cout << endl << "Pg. " << pageCounter  << ": " << url;
-        else if (pageCounter % 3333 == 0)
-            cout << ".";
-        else if (pageCounter % 6666 == 0)
-            cout << ".";
+        cout << endl << "SUC " << pageCounter  << ": " << url;
 
         // Inbound links
         size = spider.get_NumUnspidered();

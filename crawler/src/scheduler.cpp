@@ -4,11 +4,10 @@ using namespace std;
 
 // to use on max_min_heap
 inline bool operator<( const PageEntity& a, const PageEntity& b) {
-    if (a.depth < b.depth) {
-        return true;    
-    } else if (a.depth == b.depth && a.penalty < b.penalty) {
+    if (a.depth-2 < b.depth+2 && a.penalty < b.penalty) {
         return true;
     }
+
     return false;
 }
 
@@ -28,7 +27,8 @@ Scheduler::Scheduler (int size) {
     notAllowedUrls.push_back("migre.me");
     notAllowedUrls.push_back("bit.ly");
     notAllowedUrls.push_back("share=");
-    notAllowedUrls.push_back("www.facebook.com/sharer.php");
+    notAllowedUrls.push_back("facebook.com/sharer.php");
+    notAllowedUrls.push_back("twitter.com/share");
 }
 
 bool Scheduler::hasUnvisited () {
@@ -62,8 +62,8 @@ string Scheduler::popUrl () {
                 urlsToCrawl.push(toAddLater[i]);
             }
             mtx.unlock();
+            // cout << endl << "Tries: " << toAddLater.size();
             toAddLater.clear();
-            //cout << page.penalty << " | ";
             return page.url;
         } else {
             page.penalty += 1;
