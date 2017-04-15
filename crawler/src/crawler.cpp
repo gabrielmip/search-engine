@@ -84,6 +84,7 @@ void Crawler::worker () {
 
     string url, domain, html;
     int size, i;
+    vector<string> pageLinks;
 
     // signal used by crawler object to stop crawling
     while (isStillCrawling()) {
@@ -92,9 +93,8 @@ void Crawler::worker () {
             continue;
         }
 
-
         url = schd->popUrl(); // gets uncrawled URL from scheduler
-        if (url.size() == 0)
+        if (url.size() == 0) 
             continue;
 
         domain = utils.getDomain(url);
@@ -112,8 +112,6 @@ void Crawler::worker () {
         savePage(url, html); // saves content
 
         cout << endl << "SUC " << pageCounter  << ": " << url;
-
-        vector<string> pageLinks;
 
         // Inbound links
         size = spider.get_NumUnspidered();
@@ -135,5 +133,6 @@ void Crawler::worker () {
         spider.ClearSpideredUrls();
         
         schd->addUrls(pageLinks);
+        pageLinks.clear();
     }
 }

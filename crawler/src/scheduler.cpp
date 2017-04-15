@@ -4,7 +4,7 @@ using namespace std;
 
 // to use on max_min_heap
 inline bool operator<( const PageEntity& a, const PageEntity& b) {
-    if (a.depth-2 < b.depth+2 && a.penalty < b.penalty) {
+    if (a.depth-4 < b.depth+4 && a.penalty < b.penalty) { 
         return true;
     }
     return false;

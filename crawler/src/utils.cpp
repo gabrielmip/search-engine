@@ -6,6 +6,11 @@ Utils::Utils () {
     indexEndings.push_back("/index.html");
     indexEndings.push_back("/index.htm");
     indexEndings.push_back("/index.php");
+    indexEndings.push_back("/index.asp");
+    indexEndings.push_back("/default.asp");
+    indexEndings.push_back("/default.html");
+    indexEndings.push_back("/default.htm");
+    indexEndings.push_back("/default.php");
     indexEndings.push_back("/");
 }
 
@@ -16,13 +21,14 @@ string Utils::getDomain(string url) {
 
     // looks for www in domain string
     const string www = "www.";
-    int i; 
-    for (i = 0; i < domain.size() && i < www.size(); i++) {
+    int i = 0; 
+    for (; i < domain.size() && i < www.size(); i++) {
         if (www[i] != domain[i]) break;
     }
 
     // removes www
-    domain = domain.substr(i, domain.size() - i);
+    if (i == www.size())
+        domain = domain.substr(i, domain.size() - i);
 
     //removes subdomain if it has any
     return spider.getBaseDomain(domain.c_str());
@@ -57,6 +63,17 @@ int Utils::countDepth (string url) {
 string Utils::formatUrl (string url) {
     // lower case
     transform(url.begin(), url.end(), url.begin(), ::tolower);
+
+    // removes duplicated slashs from the begining (https://////, for instance)
+    const string https = "https";
+    int i;
+    for (i = 0; i < https.size() && i < url.size(); i++) {
+        if (url[i] != https[i]) break;
+    }
+    if (i > 2) i += 3; // now i stores position of char after second slash in http://
+    int extras = 0;
+    for (; i + extras < url.size() && url[i + extras] == '/'; extras++) {} // counts extra slashs
+    url.erase(i, extras);
 
     // index endings (index.html, index.php, etc)
     int pos, exStartPos;
