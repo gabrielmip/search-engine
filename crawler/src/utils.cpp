@@ -18,9 +18,11 @@ string Utils::getDomain(string url) {
     if (url.size() == 0) return "";
 
     string domain;
+    char *ckr;
 
-    domain = spider.getUrlDomain(url.c_str());
-    if (domain.size() == 0) return "";
+    ckr = spider.getUrlDomain(url.c_str());
+    if (ckr == NULL) return "";
+    domain = ckr;
 
     // looks for www in domain string
     const string www = "www.";
@@ -32,12 +34,12 @@ string Utils::getDomain(string url) {
     // removes www
     if (i == www.size()) {
         domain = domain.substr(i, domain.size() - i);
-        if (domain.size() == 0) return "";
     }
 
-    //removes subdomain if it has any
-    domain = spider.getBaseDomain(domain.c_str());
-    if (domain.size() == 0) return "";    
+    // removes subdomain if it has any
+    ckr = spider.getBaseDomain(domain.c_str());
+    if (ckr == NULL) return "";
+    domain = ckr;
 
     return domain;
 }
