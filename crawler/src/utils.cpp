@@ -17,21 +17,29 @@ Utils::Utils () {
 string Utils::getDomain(string url) {
     if (url.size() == 0) return "";
 
-    string domain = spider.getUrlDomain(url.c_str());
+    string domain;
 
-    // looks for www in domain string
-    const string www = "www.";
-    int i = 0; 
-    for (; i < domain.size() && i < www.size(); i++) {
-        if (www[i] != domain[i]) break;
+    try {
+        domain = spider.getUrlDomain(url.c_str());    
+
+        // looks for www in domain string
+        const string www = "www.";
+        int i = 0; 
+        for (; i < domain.size() && i < www.size(); i++) {
+            if (www[i] != domain[i]) break;
+        }
+
+        // removes www
+        if (i == www.size())
+            domain = domain.substr(i, domain.size() - i);
+
+        //removes subdomain if it has any
+        domain = spider.getBaseDomain(domain.c_str());
+    } catch (int e) {
+        domain = "";
     }
 
-    // removes www
-    if (i == www.size())
-        domain = domain.substr(i, domain.size() - i);
-
-    //removes subdomain if it has any
-    return spider.getBaseDomain(domain.c_str());
+    return domain;
 }
 
 // count slashs in url, ignoring the first 2
@@ -63,6 +71,10 @@ int Utils::countDepth (string url) {
 string Utils::formatUrl (string url) {
     // lower case
     transform(url.begin(), url.end(), url.begin(), ::tolower);
+
+    // spaces
+    string::iterator endPos = remove(url.begin(), url.end(), ' ');
+    url.erase(endPos, url.end());
 
     // removes duplicated slashs from the begining (https://////, for instance)
     const string https = "https";
