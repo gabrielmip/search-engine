@@ -158,24 +158,29 @@ void Scheduler::addUrl (string url) {
 
     mtx.lock();
     if (!hasSeen(formattedUrl)) {
-        if (urlsToCrawl.size() >= MAX_HEAP_SIZE)
-            urlsToCrawl.pop_max();
-        
         PageEntity p;
-        p.url = formattedUrl;
-        p.domain = utils.getDomain(formattedUrl);
-        pair<int, time_t> domainInfo = getDomainInfo(p.domain);
-        domainInfo.first += 1; // updated penalty for domain
-        p.penalty = domainInfo.first; 
-        p.depth = depth;
         
-        urlsToCrawl.push(p);
-        
-        // says it has now seen the url
-        registeredUrls[formattedUrl] = ' ';
+        try {
+            p.url = formattedUrl;
+            p.domain = utils.getDomain(formattedUrl);
+            pair<int, time_t> domainInfo = getDomainInfo(p.domain);
+            domainInfo.first += 1; // updated penalty for domain
+            p.penalty = domainInfo.first; 
+            p.depth = depth;
+            
+            if (urlsToCrawl.size() >= MAX_HEAP_SIZE)
+                urlsToCrawl.pop_max();
+            urlsToCrawl.push(p);
+            
+            // says it has now seen the url
+            registeredUrls[formattedUrl] = ' ';
 
-        // updates domain penalty
-        domainLastVisit[p.domain] = domainInfo;
+            // updates domain penalty
+            domainLastVisit[p.domain] = domainInfo;
+        } catch (int e) {
+            // nothing
+            cerr << '\n' << 'ERR when adding URL ' << url;
+        }
     }
     mtx.unlock();
 }
@@ -188,30 +193,36 @@ void Scheduler::addUrls (vector<string> urls) {
         int depth = utils.countDepth(formattedUrl);
 
         if (!hasSeen(formattedUrl)) {
-            if (urlsToCrawl.size() >= MAX_HEAP_SIZE)
-                urlsToCrawl.pop_max();
-            
             PageEntity p;
-            p.url = formattedUrl;
-            p.domain = utils.getDomain(formattedUrl);
-            pair<int, time_t> domainInfo = getDomainInfo(p.domain);
-            domainInfo.first += 1; // updated penalty for domain
-            p.penalty = domainInfo.first; 
-            p.depth = depth;
-            
-            urlsToCrawl.push(p);
-            
-            // says it has now seen the url
-            registeredUrls[formattedUrl] = ' ';
 
-            // updates domain penalty
-            domainLastVisit[p.domain] = domainInfo;
+            try {
+                p.url = formattedUrl;
+                p.domain = utils.getDomain(formattedUrl);
+                pair<int, time_t> domainInfo = getDomainInfo(p.domain);
+                domainInfo.first += 1; // updated penalty for domain
+                p.penalty = domainInfo.first; 
+                p.depth = depth;
+                
+                if (urlsToCrawl.size() >= MAX_HEAP_SIZE)
+                    urlsToCrawl.pop_max();
+                urlsToCrawl.push(p);
+                
+                // says it has now seen the url
+                registeredUrls[formattedUrl] = ' ';
+
+                // updates domain penalty
+                domainLastVisit[p.domain] = domainInfo;
+            } catch (int e) {
+                // nothing
+                cerr << '\n' << 'ERR when adding URL ' << url;
+            }
         }        
     }
     mtx.unlock();
 }
 
 // assumes it is a well formed url taken from the scheduler
+// therefore no try catch when trying to extract domain
 void Scheduler::reAddUrl (string url) {
     PageEntity p;
     p.domain = utils.getDomain(url);
