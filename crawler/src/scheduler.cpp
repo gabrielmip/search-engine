@@ -153,6 +153,7 @@ bool Scheduler::isUrlAllowed (string url) {
 
 void Scheduler::addUrl (string url) {
     string formattedUrl = utils.formatUrl(url);
+    if (formattedUrl.size() == 0) return;
     if (!isUrlAllowed(formattedUrl)) return;
     int depth = utils.countDepth(formattedUrl);
 
@@ -160,9 +161,45 @@ void Scheduler::addUrl (string url) {
     if (!hasSeen(formattedUrl)) {
         PageEntity p;
 
-        try {
+        p.url = formattedUrl;
+        p.domain = utils.getDomain(formattedUrl);
+        if (p.domain.size() == 0) {
+            mtx.unlock(); return;
+        }
+        
+        pair<int, time_t> domainInfo = getDomainInfo(p.domain);
+        domainInfo.first += 1; // updated penalty for domain
+        p.penalty = domainInfo.first; 
+        p.depth = depth;
+        
+        if (urlsToCrawl.size() >= MAX_HEAP_SIZE)
+            urlsToCrawl.pop_max();
+        urlsToCrawl.push(p);
+        
+        // says it has now seen the url
+        registeredUrls[formattedUrl] = ' ';
+
+        // updates domain penalty
+        domainLastVisit[p.domain] = domainInfo;
+    }
+    mtx.unlock();
+}
+
+void Scheduler::addUrls (vector<string> urls) {
+    mtx.lock();
+    for (int i = 0; i < urls.size(); i++) {
+        string formattedUrl = utils.formatUrl(urls[i]);
+        if (formattedUrl.size() == 0) continue;
+        if (!isUrlAllowed(formattedUrl)) continue;
+        int depth = utils.countDepth(formattedUrl);
+
+        if (!hasSeen(formattedUrl)) {
+            PageEntity p;
+
             p.url = formattedUrl;
             p.domain = utils.getDomain(formattedUrl);
+            if (p.domain.size() == 0) continue;
+
             pair<int, time_t> domainInfo = getDomainInfo(p.domain);
             domainInfo.first += 1; // updated penalty for domain
             p.penalty = domainInfo.first; 
@@ -177,45 +214,6 @@ void Scheduler::addUrl (string url) {
 
             // updates domain penalty
             domainLastVisit[p.domain] = domainInfo;
-        } catch (int e) {
-            // nothing
-            cerr << '\n' << "ERR when adding URL " << url;
-        }
-    }
-    mtx.unlock();
-}
-
-void Scheduler::addUrls (vector<string> urls) {
-    mtx.lock();
-    for (int i = 0; i < urls.size(); i++) {
-        string formattedUrl = utils.formatUrl(urls[i]);
-        if (!isUrlAllowed(formattedUrl)) continue;
-        int depth = utils.countDepth(formattedUrl);
-
-        if (!hasSeen(formattedUrl)) {
-            PageEntity p;
-
-            try {
-                p.url = formattedUrl;
-                p.domain = utils.getDomain(formattedUrl);
-                pair<int, time_t> domainInfo = getDomainInfo(p.domain);
-                domainInfo.first += 1; // updated penalty for domain
-                p.penalty = domainInfo.first; 
-                p.depth = depth;
-                
-                if (urlsToCrawl.size() >= MAX_HEAP_SIZE)
-                    urlsToCrawl.pop_max();
-                urlsToCrawl.push(p);
-                
-                // says it has now seen the url
-                registeredUrls[formattedUrl] = ' ';
-
-                // updates domain penalty
-                domainLastVisit[p.domain] = domainInfo;
-            } catch (int e) {
-                // nothing
-                cerr << '\n' << "ERR when adding URL " << formattedUrl;
-            }
         }        
     }
     mtx.unlock();
