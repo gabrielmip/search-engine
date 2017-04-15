@@ -80,8 +80,9 @@ string Utils::formatUrl (string url) {
     int pos, exStartPos;
     for (int i = 0; i < indexEndings.size(); i++) {
         exStartPos = url.size() - indexEndings[i].size();
+        if (exStartPos < 0) continue;
         pos = url.find(indexEndings[i], exStartPos);
-        if (pos != string::npos) { // found expression
+        if (pos != string::npos and pos != -1) { // found expression
             url = url.substr(0, exStartPos);
             break;
         }
