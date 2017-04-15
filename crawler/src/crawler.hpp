@@ -29,6 +29,7 @@ class Crawler {
         std::mutex bufferMtx;
         int PAGES_PER_FILE;
         int NUM_PAGES_TO_COLLECT;
+        bool ignorePages;
         int nWorkers;
         void worker (); // thread
         Utils utils;

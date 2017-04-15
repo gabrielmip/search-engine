@@ -89,10 +89,16 @@ string Utils::formatUrl (string url) {
     return url;
 }
 
-void Utils::log (string url) {
+void Utils::log (string url, long bytes) {
     time_t timer;
     time(&timer);
-    crawlingLog.push_back(make_pair(url, timer));
+    
+    LogEntity le;
+    le.url = url;
+    le.bytes = bytes;
+    le.timestamp = timer;
+    
+    crawlingLog.push_back(le);
 }
 
 void Utils::setLogPath (string logPath) {
@@ -103,9 +109,10 @@ void Utils::dumpLog () {
     fstream fs;
     fs.open(path, fstream::in | fstream::out | fstream::app);
 
-    vector<pair<string, time_t> >::iterator it;
-    for (it = crawlingLog.begin(); it != crawlingLog.end(); it++) {
-        fs << it->second << " " << it->first << endl;
+    LogEntity item;
+    for (int i = 0; i < crawlingLog.size(); i++) {
+        item = crawlingLog[i];
+        fs << item.timestamp << " " << item.bytes << " " << item.url << endl;
     }
     
     fs.close();

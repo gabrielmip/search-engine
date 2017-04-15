@@ -18,6 +18,7 @@ Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds,
 
     pageCounter = 0;
     fileCounter = 0;
+    ignorePages = true;
     PAGES_PER_FILE = pagesPerFile;
     NUM_PAGES_TO_COLLECT = pages;
 
@@ -37,7 +38,7 @@ void Crawler::start () {
         it->join();
     }
 
-    cout << "Over." << endl;
+    cout << endl << "Over." << endl;
 }
 
 bool Crawler::isStillCrawling () {
@@ -49,6 +50,19 @@ bool bothAreSpaces (char lhs, char rhs) {
 }
 
 void Crawler::savePage (string url, string html) {
+    long bytes = html.size();
+
+    if (ignorePages) {
+        bufferMtx.lock();
+        utils.log(url, bytes);
+        pageCounter++;
+        if (pageCounter % PAGES_PER_FILE == PAGES_PER_FILE - 1 || pageCounter >= NUM_PAGES_TO_COLLECT) {
+            utils.dumpLog();
+        }
+        bufferMtx.unlock();
+        return;
+    }
+    
     // remove pipes
     replace(html.begin(), html.end(), '|', ' ');
     
@@ -58,7 +72,7 @@ void Crawler::savePage (string url, string html) {
 
     bufferMtx.lock();
     htmlBuffer += "||| " + url + " | " + html + " ";
-    utils.log(url);
+    utils.log(url, bytes);
     pageCounter++;
 
     // saves buffer to file
