@@ -73,7 +73,8 @@ string Utils::formatUrl (string url) {
     if (i > 2) i += 3; // now i stores position of char after second slash in http://
     int extras = 0;
     for (; i + extras < url.size() && url[i + extras] == '/'; extras++) {} // counts extra slashs
-    url.erase(i, extras);
+    if (i < url.size())
+        url.erase(i, extras);
 
     // index endings (index.html, index.php, etc)
     int pos, exStartPos;
