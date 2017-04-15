@@ -19,25 +19,25 @@ string Utils::getDomain(string url) {
 
     string domain;
 
-    try {
-        domain = spider.getUrlDomain(url.c_str());    
+    domain = spider.getUrlDomain(url.c_str());
+    if (domain.size() == 0) return "";
 
-        // looks for www in domain string
-        const string www = "www.";
-        int i = 0; 
-        for (; i < domain.size() && i < www.size(); i++) {
-            if (www[i] != domain[i]) break;
-        }
-
-        // removes www
-        if (i == www.size())
-            domain = domain.substr(i, domain.size() - i);
-
-        //removes subdomain if it has any
-        domain = spider.getBaseDomain(domain.c_str());
-    } catch (int e) {
-        domain = "";
+    // looks for www in domain string
+    const string www = "www.";
+    int i = 0; 
+    for (; i < domain.size() && i < www.size(); i++) {
+        if (www[i] != domain[i]) break;
     }
+
+    // removes www
+    if (i == www.size()) {
+        domain = domain.substr(i, domain.size() - i);
+        if (domain.size() == 0) return "";
+    }
+
+    //removes subdomain if it has any
+    domain = spider.getBaseDomain(domain.c_str());
+    if (domain.size() == 0) return "";    
 
     return domain;
 }
