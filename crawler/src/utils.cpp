@@ -114,7 +114,7 @@ void Utils::dumpLog () {
     LogEntity item;
     for (int i = 0; i < crawlingLog.size(); i++) {
         item = crawlingLog[i];
-        fs << item.timestamp << " " << item.bytes << " " << item.url << endl;
+        fs << item.timestamp << " " << item.bytes << " " << item.url << '\n';
     }
     
     fs.close();

@@ -38,7 +38,7 @@ void Crawler::start () {
         it->join();
     }
 
-    cout << endl << "Over." << endl;
+    cout << '\n' << "Over." << '\n';
 }
 
 bool Crawler::isStillCrawling () {
@@ -118,14 +118,14 @@ void Crawler::worker () {
         // couldnt be crawled
         if (!spider.CrawlNext()) {
             schd->reAddUrl (url);
-            cout << endl << "ERR: " << url << " - " << domain;
+            cout << '\n' << "ERR: " << url << " - " << domain;
             continue;
         }
 
         html = spider.lastHtml(); // get page content
         savePage(url, html); // saves content
 
-        cout << endl << "SUC " << pageCounter  << ": " << url;
+        cout << '\n' << "SUC " << pageCounter  << ": " << url;
 
         // Inbound links
         size = spider.get_NumUnspidered();

@@ -63,7 +63,7 @@ string Scheduler::popUrl () {
             }
             toAddLater.clear();
             mtx.unlock();
-            // cout << endl << "Tries: " << toAddLater.size();
+            // cout << '\n' << "Tries: " << toAddLater.size();
             return page.url;
         } else {
             page.penalty += 1;
@@ -145,6 +145,8 @@ bool Scheduler::isUrlAllowed (string url) {
             break;
         }
     }
+
+
 
     return allow && !disallow;
 }

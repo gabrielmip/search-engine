@@ -44,10 +44,10 @@ int main(int argc, char **argv){
 	cout << spider.canonicalizeUrl("http:////www.chilkatsoft.com///purchase2.asp#buyZip") << "\r\n";
 	vector<string> seeds = readSeedFile(argv[1]);
 	for (int i = 0; i < seeds.size(); i++) {
-		cout << seeds[i] << endl;
-		cout << u.formatUrl(seeds[i]) <<endl;
+		cout << seeds[i] << '\n';
+		cout << u.formatUrl(seeds[i]) <<'\n';
 		formatted = u.formatUrl(seeds[i]);
-		cout << u.getDomain(formatted) << endl;
+		cout << u.getDomain(formatted) << '\n';
 		continue;
 	}
 	return 0;
@@ -56,16 +56,16 @@ int main(int argc, char **argv){
 		url = s.popUrl();
 		formatted = u.formatUrl(url);
 		cout << url << ' ' << formatted << ' ';
-		cout << u.getDomain(formatted) << endl;
+		cout << u.getDomain(formatted) << '\n';
 		spider.Initialize(u.getDomain(formatted).c_str());
 		spider.AddUnspidered(formatted.c_str());
 		if (spider.CrawlNext()) {
-			cout << "worked "<< endl;
+			cout << "worked "<< '\n';
 		} else {
-			cout << " didnt work"<< endl;
+			cout << " didnt work"<< '\n';
 		}
-		cout << u.getDomain(formatted) << endl;
-		cout << u.formatUrl(formatted) << endl;
+		cout << u.getDomain(formatted) << '\n';
+		cout << u.formatUrl(formatted) << '\n';
 	}
 	*/
 }
