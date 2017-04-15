@@ -159,7 +159,7 @@ void Scheduler::addUrl (string url) {
     mtx.lock();
     if (!hasSeen(formattedUrl)) {
         PageEntity p;
-        
+
         try {
             p.url = formattedUrl;
             p.domain = utils.getDomain(formattedUrl);
@@ -179,7 +179,7 @@ void Scheduler::addUrl (string url) {
             domainLastVisit[p.domain] = domainInfo;
         } catch (int e) {
             // nothing
-            cerr << '\n' << 'ERR when adding URL ' << url;
+            cerr << '\n' << "ERR when adding URL " << url;
         }
     }
     mtx.unlock();
@@ -214,7 +214,7 @@ void Scheduler::addUrls (vector<string> urls) {
                 domainLastVisit[p.domain] = domainInfo;
             } catch (int e) {
                 // nothing
-                cerr << '\n' << 'ERR when adding URL ' << url;
+                cerr << '\n' << "ERR when adding URL " << formattedUrl;
             }
         }        
     }
