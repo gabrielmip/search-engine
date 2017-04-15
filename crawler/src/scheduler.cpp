@@ -7,7 +7,6 @@ inline bool operator<( const PageEntity& a, const PageEntity& b) {
     if (a.depth-2 < b.depth+2 && a.penalty < b.penalty) {
         return true;
     }
-
     return false;
 }
 
@@ -47,11 +46,10 @@ string Scheduler::popUrl () {
     pair<int, time_t> domainInfo;
     vector<PageEntity> toAddLater;
     time_t now;
-    time(&now);
     
     mtx.lock();
-    
-    // cout << "while"<<endl;
+
+    time(&now);
     
     while (urlsToCrawl.size() > 0) {
         page = urlsToCrawl.min();
@@ -63,9 +61,9 @@ string Scheduler::popUrl () {
             for (int i = 0; i < toAddLater.size(); i++) {
                 urlsToCrawl.push(toAddLater[i]);
             }
+            toAddLater.clear();
             mtx.unlock();
             // cout << endl << "Tries: " << toAddLater.size();
-            toAddLater.clear();
             return page.url;
         } else {
             page.penalty += 1;
@@ -181,9 +179,34 @@ void Scheduler::addUrl (string url) {
 }
 
 void Scheduler::addUrls (vector<string> urls) {
+    mtx.lock();
     for (int i = 0; i < urls.size(); i++) {
-        addUrl(urls[i]);
+        string formattedUrl = utils.formatUrl(urls[i]);
+        if (!isUrlAllowed(formattedUrl)) continue;
+        int depth = utils.countDepth(formattedUrl);
+
+        if (!hasSeen(formattedUrl)) {
+            if (urlsToCrawl.size() >= MAX_HEAP_SIZE)
+                urlsToCrawl.pop_max();
+            
+            PageEntity p;
+            p.url = formattedUrl;
+            p.domain = utils.getDomain(formattedUrl);
+            pair<int, time_t> domainInfo = getDomainInfo(p.domain);
+            domainInfo.first += 1; // updated penalty for domain
+            p.penalty = domainInfo.first; 
+            p.depth = depth;
+            
+            urlsToCrawl.push(p);
+            
+            // says it has now seen the url
+            registeredUrls[formattedUrl] = ' ';
+
+            // updates domain penalty
+            domainLastVisit[p.domain] = domainInfo;
+        }        
     }
+    mtx.unlock();
 }
 
 // assumes it is a well formed url taken from the scheduler

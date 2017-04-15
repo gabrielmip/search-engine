@@ -41,7 +41,7 @@ void Crawler::start () {
 }
 
 bool Crawler::isStillCrawling () {
-    return pageCounter < NUM_PAGES_TO_COLLECT && schd->hasUnvisited();
+    return pageCounter < NUM_PAGES_TO_COLLECT;
 }
 
 bool bothAreSpaces (char lhs, char rhs) {
@@ -113,11 +113,13 @@ void Crawler::worker () {
 
         cout << endl << "SUC " << pageCounter  << ": " << url;
 
+        vector<string> pageLinks;
+
         // Inbound links
         size = spider.get_NumUnspidered();
         for (i = 0; i < size; i++) {
             url = spider.getUnspideredUrl(0);
-            schd->addUrl(url);
+            pageLinks.push_back(url);
             spider.SkipUnspidered(0); // Removes inbound link from local queue
         }
 
@@ -125,9 +127,13 @@ void Crawler::worker () {
         size = spider.get_NumOutboundLinks();
         for (i = 0; i < size; i++) {
             url = spider.getOutboundLink(i);
-            schd->addUrl(url);
+            pageLinks.push_back(url);
         }
-
-        spider.ClearOutboundLinks(); // Clears all outbound links
+        
+        spider.ClearFailedUrls();
+        spider.ClearOutboundLinks();
+        spider.ClearSpideredUrls();
+        
+        schd->addUrls(pageLinks);
     }
 }
