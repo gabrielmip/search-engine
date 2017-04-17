@@ -18,7 +18,6 @@ Crawler::Crawler (vector<string> seeds, int numWorkers, int seconds,
 
     pageCounter = 0;
     fileCounter = 0;
-    ignorePages = true;
     PAGES_PER_FILE = pagesPerFile;
     NUM_PAGES_TO_COLLECT = pages;
 
@@ -45,23 +44,14 @@ bool Crawler::isStillCrawling () {
     return pageCounter < NUM_PAGES_TO_COLLECT;
 }
 
+// used to remove duplicated spaces from html content
 bool bothAreSpaces (char lhs, char rhs) {
     return (lhs == rhs) && (lhs == ' ');
 }
 
+// saves crawled page to buffer
 void Crawler::savePage (string url, string html) {
     long bytes = html.size();
-
-    if (ignorePages) {
-        bufferMtx.lock();
-        utils.log(url, bytes);
-        pageCounter++;
-        if (pageCounter % PAGES_PER_FILE == PAGES_PER_FILE - 1 || pageCounter >= NUM_PAGES_TO_COLLECT) {
-            utils.dumpLog();
-        }
-        bufferMtx.unlock();
-        return;
-    }
     
     // remove pipes
     replace(html.begin(), html.end(), '|', ' ');

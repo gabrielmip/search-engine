@@ -14,11 +14,13 @@ Utils::Utils () {
     indexEndings.push_back("/");
 }
 
+// extract domain from URL
+// returns empty string if couldnt be done
 string Utils::getDomain(string url) {
     if (url.size() == 0) return "";
 
     string domain;
-    char *ckr;
+    const char *ckr;
 
     ckr = spider.getUrlDomain(url.c_str());
     if (ckr == NULL) return "";
@@ -70,6 +72,8 @@ int Utils::countDepth (string url) {
     return depth;
 }
 
+// performs some corrections and normalizations
+// in the url
 string Utils::formatUrl (string url) {
     // lower case
     transform(url.begin(), url.end(), url.begin(), ::tolower);

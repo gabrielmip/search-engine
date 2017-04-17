@@ -48,14 +48,16 @@ string Scheduler::popUrl () {
     time_t now;
     
     mtx.lock();
-
     time(&now);
     
+    // pops urls from the heap's top until
+    // it finds one that can be crawled
     while (urlsToCrawl.size() > 0) {
         page = urlsToCrawl.min();
         urlsToCrawl.pop_min();
         domainInfo = getDomainInfo(page.domain);
 
+        // checks when domain was last visited
         if (domainInfo.second == -1 || now - domainInfo.second >= POLITENESS_TIME) {
             updateDomainAccessTime(page.domain);
             for (int i = 0; i < toAddLater.size(); i++) {
@@ -63,7 +65,6 @@ string Scheduler::popUrl () {
             }
             toAddLater.clear();
             mtx.unlock();
-            // cout << '\n' << "Tries: " << toAddLater.size();
             return page.url;
         } else {
             page.penalty += 1;
@@ -86,13 +87,14 @@ void Scheduler::updateDomainAccessTime (string domain) {
     time_t now;
     time(&now);
     if (it != domainLastVisit.end()) {
-        domainLastVisit[domain].first += 1;
-        domainLastVisit[domain].second = now;
+        domainLastVisit[domain].first += 1; // penalty
+        domainLastVisit[domain].second = now; // timestamp of last visit
     } else {
         domainLastVisit[domain] = make_pair(1, now);
     }
 }
 
+// returns a pair <penalty, timestamp of last visit> 
 pair<int, time_t> Scheduler::getDomainInfo (string domain) {
     unordered_map<string, pair<int, time_t> >::iterator it = domainLastVisit.find(domain);
     if (it != domainLastVisit.end()) {
@@ -102,6 +104,7 @@ pair<int, time_t> Scheduler::getDomainInfo (string domain) {
     }
 }
 
+// checks for politeness, basically
 bool Scheduler::domainCanBeAccessed (string domain) {
     unordered_map<string, pair<int, time_t> >::iterator it = domainLastVisit.find(domain);
     if (it == domainLastVisit.end()) {
@@ -117,6 +120,7 @@ bool Scheduler::domainCanBeAccessed (string domain) {
     }
 }
 
+// returns true if url was already added to scheduler
 bool Scheduler::hasSeen (string url) {
     if (registeredUrls.find(url) == registeredUrls.end()) {
         return false;
@@ -125,6 +129,8 @@ bool Scheduler::hasSeen (string url) {
     }
 }
 
+// url has to have at least one of the allowedUrls
+// and not even one of the notAllowed ones
 bool Scheduler::isUrlAllowed (string url) {
     bool allow = false;
     bool disallow = false;
@@ -146,11 +152,11 @@ bool Scheduler::isUrlAllowed (string url) {
         }
     }
 
-
-
     return allow && !disallow;
 }
 
+// checks if it's well formed and hasn't been seen
+// if heap exceeded his size, pops one page from the bottom
 void Scheduler::addUrl (string url) {
     string formattedUrl = utils.formatUrl(url);
     if (formattedUrl.size() == 0) return;
@@ -185,6 +191,8 @@ void Scheduler::addUrl (string url) {
     mtx.unlock();
 }
 
+// same thing as addUrl but for multiple urls
+// created a new function for it to avoid unnecessary locks
 void Scheduler::addUrls (vector<string> urls) {
     mtx.lock();
     for (int i = 0; i < urls.size(); i++) {

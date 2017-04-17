@@ -33,3 +33,5 @@ crawler/.vscode
 crawler/logs/
 
 crawler/doc/
+
+crawler/experiments/
