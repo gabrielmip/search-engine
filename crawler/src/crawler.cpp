@@ -84,7 +84,7 @@ void Crawler::savePage (string url, string html) {
 void Crawler::worker () {
     CkSpider spider;
     spider.put_AvoidHttps(true);
-    spider.put_ConnectTimeout(5);
+    spider.put_ConnectTimeout(30);
 
     string url, domain, html;
     int size, i;
