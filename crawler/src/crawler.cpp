@@ -86,7 +86,7 @@ void Crawler::worker () {
     spider.put_AvoidHttps(true);
     spider.put_ConnectTimeout(30);
 
-    string url, domain, html;
+    string url, domain, html, crawled;
     int size, i;
     vector<string> pageLinks;
 
@@ -113,9 +113,10 @@ void Crawler::worker () {
         }
 
         html = spider.lastHtml(); // get page content
-        savePage(url, html); // saves content
+        crawled = spider.lastUrl();
+        savePage(crawled, html); // saves content
 
-        cout << '\n' << "SUC " << pageCounter  << ": " << url;
+        cout << '\n' << "SUC " << pageCounter  << ": " << crawled;
 
         // Inbound links
         size = spider.get_NumUnspidered();
