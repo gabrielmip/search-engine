@@ -1,0 +1,12 @@
+Para compilar o coletor, execute o comando make no terminal.
+Para executar o coletor, execute o comando que se segue, subsituindo as lacunas com os valores desejados:
+
+./crawler <seeds> <nthreads> <output> <npaginas> <npag_porarquivo> <log>
+
+em que:
+- seeds: arquivo com páginas semente uma em cada linha
+- nthreads: número de threads
+- output: pasta onde serão salvas as páginas coletadas
+- npaginas: número de páginas a serem coletadas
+- npag_porarquivo: número de páginas salvas por arquivo no disco
+- log: arquivo de log
