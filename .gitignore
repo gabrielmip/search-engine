@@ -26,12 +26,13 @@
 
 crawler/crawler
 crawler/bin/*
-
 crawler/documents/
 crawler/.vscode
-
 crawler/logs/
-
 crawler/doc/
-
 crawler/experiments/
+
+indexer/bin/
+indexer/indexer
+indexer/search
+indexer/data/

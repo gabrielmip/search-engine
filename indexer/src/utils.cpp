@@ -27,3 +27,10 @@ vector<string> Utils::listdir (string folder) {
     return files;
 }
 
+// removes accents, transforms to lower case...
+// string Utils::cleanTerm (string term) {
+//     // lower case
+//     transform(term.begin(), term.end(), term.begin(), ::tolower);
+    
+// }
+
