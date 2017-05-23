@@ -10,6 +10,9 @@ string FileIterator::nextPage () {
     string newUrl;
     string newPage;
     char c;
+
+    if (feof(file)) return "";
+
     // reads from file until end of url
     while (!feof(file)) {
         c = fgetc(file);
@@ -19,6 +22,9 @@ string FileIterator::nextPage () {
         }
     }
     url = newUrl;
+
+    if (feof(file)) return "";
+
     // reads page
     while (!feof(file)) {
         c = fgetc(file);

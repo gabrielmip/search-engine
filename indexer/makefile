@@ -4,12 +4,16 @@ FLAGS=-std=c++11 -Wall -g -I /usr/local/include/htmlcxx -L/usr/local/lib -lhtmlc
 
 all: prep build
 
-build: main
-	g++ $(OBJ_DIR)/main.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/file_iterator.o $(FLAGS) -o indexer
-#	g++ $(OBJ_DIR)/main.o $(OBJ_DIR)/crawler.o $(OBJ_DIR)/scheduler.o $(OBJ_DIR)/utils.o $(FLAGS) -o crawler
+# build: indexer search
+build: indexer
 
-main: utils file_iterator
-	g++ -c $(SRC_DIR)/main.cpp $(FLAGS) -o $(OBJ_DIR)/main.o
+# search:
+# 	g++ -c $(SRC_DIR)/search.cpp $(FLAGS) -o $(OBJ_DIR)/search.o
+# 	g++ $(OBJ_DIR)/search.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/file_iterator.o $(FLAGS) -o search
+
+indexer: utils file_iterator
+	g++ -c $(SRC_DIR)/indexer.cpp $(FLAGS) -o $(OBJ_DIR)/indexer.o
+	g++ $(OBJ_DIR)/indexer.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/file_iterator.o $(FLAGS) -o indexer
 
 utils:
 	g++ -c $(SRC_DIR)/utils.cpp $(FLAGS) -o $(OBJ_DIR)/utils.o

@@ -13,7 +13,7 @@ int main (int argc, char **argv) {
     cout << endl << endl;
     cout << "Teste com FileIterator" << endl;
     FileIterator fi;
-    string path = "teste.txt";
+    string path = "data/teste.txt";
     fi.loadFile(path);
     string page = fi.nextPage();
     cout << fi.getUrl() << endl;
@@ -22,5 +22,11 @@ int main (int argc, char **argv) {
     cout << fi.getUrl() << endl;
     cout << page << endl;
 
-    
+    // wchar_t c = L'Á';
+    // string s = "examplé strÍng";
+    // cout << s << endl;
+    // replace( s.begin(), s.end(), c, 'e');
+
+    // c = 0xc1; 
+    // printf("char: %lc encoding: %d\n", c, c);   
 }

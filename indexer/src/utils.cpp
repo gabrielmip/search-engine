@@ -2,6 +2,10 @@
 
 using namespace std;
 
+Utils::Utils () {
+
+}
+
 vector<string> Utils::listdir (string folder) {
     vector<string> files;
 
@@ -28,9 +32,8 @@ vector<string> Utils::listdir (string folder) {
 }
 
 // removes accents, transforms to lower case...
-// string Utils::cleanTerm (string term) {
-//     // lower case
-//     transform(term.begin(), term.end(), term.begin(), ::tolower);
-    
-// }
+string Utils::cleanTerm (string term) {
+    // lower case
+    transform(term.begin(), term.end(), term.begin(), ::tolower);
+}
 
