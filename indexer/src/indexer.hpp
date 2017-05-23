@@ -14,4 +14,5 @@ private:
     std::string outpath;
     std::vector<std::string> rawfiles;
     Utils u;
+    FileIterator it;
 }

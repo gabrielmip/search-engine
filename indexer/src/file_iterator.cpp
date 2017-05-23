@@ -59,3 +59,9 @@ void FileIterator::loadFile (string path) {
         }
     }
 }
+
+bool FileIterator::isFileOver () {
+    int c = fgetc(file);
+    ungetc(c, file);
+    if (c == EOF) return 1;
+}
