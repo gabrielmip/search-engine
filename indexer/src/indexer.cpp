@@ -11,11 +11,25 @@ Indexer::Indexer (string raw, string merge, string out) {
 
 vector<string> Indexer::tokenize (string page) {
     vector<string> tokens;
+    string token;
+    regex rgx("[\\t\\s\\n\\r\\.,;:!?^'\"@#$\\%&*(){}[\\]\\-+=_/\\|<>]");
+    sregex_token_iterator it (page.begin(), page.end(), rgx, -1);
+    sregex_token_iterator end;
     
+    while (it != end) {
+        token = it->str();
+        if (token.size() > 0) {
+            tokens.push_back(token);
+            cout << token << '\n';
+        }
+        it++;
+    }
+    return tokens;
 }
 
 void Indexer::indexPage (string raw) {
     string page = cleanHtml(raw);
+    cout << page << endl;
     vector<string> tokens = tokenize(page);
 }
 
@@ -45,20 +59,18 @@ string Indexer::cleanHtml (string raw) {
             text.append(it->text()+" ");
         }
     }
-
     return text;
 }
 
 void Indexer::run () {
-    string rawpage, page;
+    string rawpage, page, file;
+    FileIterator it;
 
-
-    for (file : rawfiles) {
-        it.loadFile(file);
+    for (string file : rawfiles) {
+        it.loadFile(rawfolder + '/' + file);
         while (!it.isFileOver()) {
             rawpage = it.nextPage();
-            page = cleanHtml(rawpage);
-            indexPage(page);
+            indexPage(rawpage);
         }
     }
 }
@@ -74,6 +86,10 @@ int main (int argc, char **argv) {
     string outputPath = argv[3];
     Utils u;
     Indexer indexer (rawFolder, mergeFolder, outputPath);
-
+    indexer.run();
+    // FileIterator it;
+    // it.loadFile(rawfiles[0]);
+    // string page = it.nextPage();
+    // indexer.tokenize(page);
 
 }

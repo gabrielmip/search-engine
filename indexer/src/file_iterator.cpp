@@ -64,4 +64,5 @@ bool FileIterator::isFileOver () {
     int c = fgetc(file);
     ungetc(c, file);
     if (c == EOF) return 1;
+    else return 0;
 }

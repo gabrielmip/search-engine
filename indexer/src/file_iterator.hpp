@@ -7,7 +7,7 @@ public:
     std::string getUrl ();
     std::string nextPage ();
     void loadFile (std::string path);
-    bool isfileOver ();
+    bool isFileOver ();
 
 private:
     std::string url;
