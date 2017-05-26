@@ -27,12 +27,6 @@ vector<string> Indexer::tokenize (string page) {
     return tokens;
 }
 
-void Indexer::indexPage (string raw) {
-    string page = cleanHtml(raw);
-    cout << page << endl;
-    vector<string> tokens = tokenize(page);
-}
-
 string Indexer::cleanHtml (string raw) {
     htmlcxx::HTML::ParserDom parser;
     tree<htmlcxx::HTML::Node> dom = parser.parseTree(raw);
@@ -62,6 +56,55 @@ string Indexer::cleanHtml (string raw) {
     return text;
 }
 
+int Indexer::getUrlCode (string url) {
+    map<string, int>::iterator it = urlCodes.find(url);    
+    if (it == urlCodes.end()) { // url wasnt found
+        urlCodes[url] = urlCodes.size();
+    }
+    return urlCodes[url];
+}
+
+int Indexer::getTermCode (string term) {
+    map<string, int>::iterator it = vocabulary.find(term);    
+    if (it == vocabulary.end()) { // term wasnt found
+        vocabulary[term] = vocabulary.size();
+    }
+    return vocabulary[term];
+}
+
+int Indexer::addTuple (int term, int doc, int freq) {
+    Tuple a;
+    a.term = term;
+    a.doc = doc;
+    a.freq = freq;
+    cachedTuples.push_back(a);
+    if (cachedTuples.size() > ) {
+
+    }
+}
+
+void Indexer::indexPage(string raw, string url) {
+    string page = cleanHtml(raw);
+    vector<string> terms = tokenize(page);
+    int docIndex = getUrlCode(url);
+    map<int, vector<int> > appearsAt;
+    
+    // frequency of terms
+    for (int i = 0; i < terms.size(); i++) {
+        if (isStopWord(terms[i])) continue;
+        int termIndex = getTermCode(terms[i]);
+        appearsAt[termIndex].push_back(i);
+    }
+
+    // store tuples
+    map<int, vector<int> >::iterator it;
+    for (it = frequency.begin(); it != frequency.end(); it++) {
+        int termIndex = it->first;
+        vector<int> positions = it->second;
+        addTuple(termIndex, docIndex, tf);
+    }
+}
+
 void Indexer::run () {
     string rawpage, page, file;
     FileIterator it;
@@ -70,7 +113,8 @@ void Indexer::run () {
         it.loadFile(rawfolder + '/' + file);
         while (!it.isFileOver()) {
             rawpage = it.nextPage();
-            indexPage(rawpage);
+            url = it.getUrl();
+            indexPage(rawpage, url);
         }
     }
 }
@@ -87,9 +131,6 @@ int main (int argc, char **argv) {
     Utils u;
     Indexer indexer (rawFolder, mergeFolder, outputPath);
     indexer.run();
-    // FileIterator it;
-    // it.loadFile(rawfiles[0]);
-    // string page = it.nextPage();
-    // indexer.tokenize(page);
+
 
 }
