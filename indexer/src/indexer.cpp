@@ -15,8 +15,26 @@ struct tupleSorter {
     }
 };
 
-Indexer::Indexer (string raw, string merge, string out) {
+// priority queue
+struct pqTupleSorter {
+    bool operator () (pair<Tuple, int> const &aa, pair<Tuple, int> const &bb) const {
+        Tuple a = aa.first;
+        Tuple b = bb.first;
+        if (a.term > b.term) return true;
+        else if (a.term == b.term) {
+            if (a.doc > b.doc) return true;
+            else if (a.doc == b.doc) {
+                if (a.pos.size() > b.pos.size()) return true;
+                else return false;
+            } else return false;
+        } else return false;
+    }
+};
+
+
+Indexer::Indexer (string raw, string runs, string merge, string out) {
     rawfolder = raw;
+    runfolder = runs;
     mergefolder = merge;
     outpath = out;
     rawfiles = u.listdir(raw);
@@ -96,38 +114,21 @@ void Indexer::addTuple (int term, int doc, vector<int> pos) {
 
     // sort and store in files
     if (cachedTuples.size() > MAX_NUM_TUPLES) {
-        sort(cachedTuples.begin(), cachedTuples.end(), tupleSorter());
-        string filename = mergefolder + "/" + to_string(runCount) + ".txt";
-        FILE *file = fopen(filename.c_str(), "w");
-        int doc, term;
-        Tuple t;
-        for (int i = 0; i < cachedTuples.size(); i++) {
-            t = cachedTuples[i];
-            fprintf(file, "%d,%d,%d,", t.term, t.doc, t.pos.size());
-            for (int p = 0; p < t.pos.size()-1; p++) {
-                fprintf(file, "%d,", t.pos[p]);
-            }
-            fprintf(file, "%d\n", t.pos[t.pos.size()-1]);
-        }
-        fclose(file);
-        runCount++;
-        cachedTuples.clear();
+        dumpTuples();
     }
 }
 
 void Indexer::dumpTuples () {
-    int doc, term;
-    Tuple t;
-
     // sorted run
     sort(cachedTuples.begin(), cachedTuples.end(), tupleSorter());
-    string filename = mergefolder + "/" + to_string(runCount) + ".txt";
+    string filename = runfolder + "/" + to_string(runCount) + ".txt";
     FILE *file = fopen(filename.c_str(), "w");
 
     // writes to file
+    Tuple t;
     for (int i = 0; i < cachedTuples.size(); i++) {
         t = cachedTuples[i];
-        fprintf(file, "%d,%d,%d,", t.term, t.doc, t.pos.size());
+        fprintf(file, "%d,%d,%lu,", t.term, t.doc, t.pos.size());
         for (int p = 0; p < t.pos.size()-1; p++) {
             fprintf(file, "%d,", t.pos[p]);
         }
@@ -139,9 +140,84 @@ void Indexer::dumpTuples () {
     cachedTuples.clear();
 }
 
-// void Indexer::mergeDump () {
+// recursive function that calls itself until there is only
+// one file on the folder passed as parameter.
+string Indexer::mergeRuns (string folder, string otherFolder) {
+    vector<string> runPaths = u.listdir(folder);
+    if (runPaths.size() == 1) { // merge is done
+        return folder;
+    }
     
-// }
+    Tuple tup;
+    pair<Tuple, int> tuppair;
+    vector<RunIterator> runs (runPaths.size());
+    priority_queue<pair<Tuple, int>, vector<pair<Tuple, int> >, pqTupleSorter> heap;
+
+    // init run iterators
+    for (int i = 0; i < runPaths.size(); i++) {
+        runs[i].loadFile(folder + '/' + runPaths[i]);
+    }
+
+    // number of individual segments to be analysed
+    for (int i = 0; i <= runPaths.size()/MAX_NUM_TUPLES; i++) {
+        // segment interval
+        int lowLim = i * runPaths.size()/MAX_NUM_TUPLES;
+        int highLim = lowLim + 1 + runPaths.size()/MAX_NUM_TUPLES;
+        if (highLim >= runPaths.size()) {
+            highLim = runPaths.size() - 1;
+        }
+        
+        // filling heap
+        int index = lowLim;
+        while (heap.size() < MAX_NUM_TUPLES) {
+            if (!runs[index].isFileOver()) {
+                tup = runs[index].nextTuple();
+                heap.push(make_pair(tup, index));
+            }
+            index = (index+1 > highLim) ? lowLim : index+1;
+        }
+
+        // file with merged runs
+        string mergedName = otherFolder + '/' + to_string(i) + ".txt";
+        FILE *mergedFile = fopen(mergedName.c_str(), "w");
+        
+        // pops heap, writes to merged run's file and pushs
+        // a tuple from the run where the popped one came from
+        while (!heap.empty()) {
+            tuppair = heap.top();
+            tup = tuppair.first;
+            index = tuppair.second;
+            heap.pop();
+
+            // writes to file (ugh)
+            // printf("i: %d,\t<%d,%d,%lu>\n", index, tup.term, tup.doc, tup.pos.size());
+            fprintf(mergedFile, "%d,%d,%lu,", tup.term, tup.doc, tup.pos.size());
+            for (int p = 0; p < tup.pos.size()-1; p++) {
+                fprintf(mergedFile, "%d,", tup.pos[p]);
+            }
+            fprintf(mergedFile, "%d\n", tup.pos[tup.pos.size()-1]);
+
+            // inserts a new one if possible
+            if (!runs[index].isFileOver()) {
+                tup = runs[index].nextTuple();
+                heap.push(make_pair(tup, index));
+            }
+        }
+        fclose(mergedFile);
+    }
+    
+    // deleting original run files
+    for (int i = 0; i < runPaths.size(); i++) {
+        string name = folder + '/' + runPaths[i];
+        remove(name.c_str());
+    }
+
+    runPaths.clear();
+    runs.clear();
+
+    // call function again, now for the merged runs
+    mergeRuns(otherFolder, folder);
+}
 
 void Indexer::indexPage(string raw, string url) {
     string page = cleanHtml(raw);
@@ -182,20 +258,34 @@ void Indexer::run () {
         dumpTuples();
     }
 
-    // mergeDumps();
+    string finalFolder = mergeRuns(runfolder, mergefolder);
 }
 
 int main (int argc, char **argv) {
-    if (argc != 4) {
+    if (argc != 5) {
         cerr << "Few arguments." << endl;
         exit(1);
     }
 
-    string rawFolder = argv[1];
-    string mergeFolder = argv[2];
-    string outputPath = argv[3];
+    // RunIterator r;
+    // r.loadFile("data/0.txt");
+    // while (!r.isFileOver()) {
+    //     Tuple tup = r.nextTuple();
+    //     printf("<%d,%d,%lu>\n", tup.term, tup.doc, tup.pos.size());
+    //     for (int i = 0; i < tup.pos.size(); i++) {
+    //         printf("%d,", tup.pos[i]);
+    //     }
+    //     printf("\n");
+    // }
+
+
+
+    string docsFolder = argv[1];
+    string runsFolder = argv[2];
+    string mergeFolder = argv[3];
+    string outputPath = argv[4];
     Utils u;
-    Indexer indexer (rawFolder, mergeFolder, outputPath);
+    Indexer indexer (docsFolder, runsFolder, mergeFolder, outputPath);
     indexer.run();
 
 

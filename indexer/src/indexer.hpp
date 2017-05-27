@@ -4,25 +4,22 @@
 #include <regex>
 #include <iterator>
 #include <algorithm>
+#include <queue>
 
 #include <html/ParserDom.h>
 #include "utils.hpp"
 #include "file_iterator.hpp"
-
-typedef struct {
-    int term;
-    int doc;
-    std::vector<int> pos;
-} Tuple;
+#include "run_iterator.hpp"
 
 class Indexer {
 public:
-    Indexer (std::string raw, std::string merge, std::string out);
+    Indexer (std::string raw, std::string runs, std::string merge, std::string out);
     void run ();
     std::vector<std::string> tokenize (std::string page);
 
 private:
     std::string rawfolder;
+    std::string runfolder;
     std::string mergefolder;
     std::string outpath;
     std::vector<std::string> rawfiles;
@@ -36,7 +33,7 @@ private:
     int getTermCode (std::string term);
     void addTuple (int term, int doc, std::vector<int> pos);
     void dumpTuples ();
-    void mergeDump ();
+    std::string mergeRuns (std::string folder,std::string otherFolder);
     int MAX_NUM_TUPLES;
     int runCount;
 };

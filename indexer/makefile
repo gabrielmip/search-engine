@@ -11,9 +11,9 @@ build: indexer
 # 	g++ -c $(SRC_DIR)/search.cpp $(FLAGS) -o $(OBJ_DIR)/search.o
 # 	g++ $(OBJ_DIR)/search.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/file_iterator.o $(FLAGS) -o search
 
-indexer: utils file_iterator
+indexer: utils file_iterator run_iterator
 	g++ -c $(SRC_DIR)/indexer.cpp $(FLAGS) -o $(OBJ_DIR)/indexer.o
-	g++ $(OBJ_DIR)/indexer.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/file_iterator.o $(FLAGS) -o indexer
+	g++ $(OBJ_DIR)/indexer.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/file_iterator.o $(OBJ_DIR)/run_iterator.o $(FLAGS) -o indexer
 
 utils:
 	g++ -c $(SRC_DIR)/utils.cpp $(FLAGS) -o $(OBJ_DIR)/utils.o
@@ -21,9 +21,16 @@ utils:
 file_iterator:
 	g++ -c $(SRC_DIR)/file_iterator.cpp $(FLAGS) -o $(OBJ_DIR)/file_iterator.o
 
+run_iterator:
+	g++ -c $(SRC_DIR)/run_iterator.cpp $(FLAGS) -o $(OBJ_DIR)/run_iterator.o
+
 prep:
 	clear
 	mkdir -p $(OBJ_DIR)
+	mkdir -p data/docs
+	mkdir -p data/runs
+	mkdir -p data/merge
+	mkdir -p data/index
 
 clean:
 	rm $(OBJ_DIR)/*.o indexer
