@@ -2,11 +2,26 @@
 
 using namespace std;
 
+struct tupleSorter {
+    bool operator () (Tuple const &a, Tuple const &b) const {
+        if (a.term < b.term) return true;
+        else if (a.term == b.term) {
+            if (a.doc < b.doc) return true;
+            else if (a.doc == b.doc) {
+                if (a.pos.size() < b.pos.size()) return true;
+                else return false;
+            } else return false;
+        } else return false;
+    }
+};
+
 Indexer::Indexer (string raw, string merge, string out) {
     rawfolder = raw;
     mergefolder = merge;
     outpath = out;
     rawfiles = u.listdir(raw);
+    MAX_NUM_TUPLES = 5;
+    runCount = 0;
 }
 
 vector<string> Indexer::tokenize (string page) {
@@ -20,7 +35,6 @@ vector<string> Indexer::tokenize (string page) {
         token = it->str();
         if (token.size() > 0) {
             tokens.push_back(token);
-            cout << token << '\n';
         }
         it++;
     }
@@ -67,21 +81,67 @@ int Indexer::getUrlCode (string url) {
 int Indexer::getTermCode (string term) {
     map<string, int>::iterator it = vocabulary.find(term);    
     if (it == vocabulary.end()) { // term wasnt found
+        // printf("%s wasnt found. code: %d\n", term.c_str(), vocabulary.size());
         vocabulary[term] = vocabulary.size();
     }
     return vocabulary[term];
 }
 
-int Indexer::addTuple (int term, int doc, int freq) {
+void Indexer::addTuple (int term, int doc, vector<int> pos) {
     Tuple a;
     a.term = term;
     a.doc = doc;
-    a.freq = freq;
+    a.pos = pos;
     cachedTuples.push_back(a);
-    if (cachedTuples.size() > ) {
 
+    // sort and store in files
+    if (cachedTuples.size() > MAX_NUM_TUPLES) {
+        sort(cachedTuples.begin(), cachedTuples.end(), tupleSorter());
+        string filename = mergefolder + "/" + to_string(runCount) + ".txt";
+        FILE *file = fopen(filename.c_str(), "w");
+        int doc, term;
+        Tuple t;
+        for (int i = 0; i < cachedTuples.size(); i++) {
+            t = cachedTuples[i];
+            fprintf(file, "%d,%d,%d,", t.term, t.doc, t.pos.size());
+            for (int p = 0; p < t.pos.size()-1; p++) {
+                fprintf(file, "%d,", t.pos[p]);
+            }
+            fprintf(file, "%d\n", t.pos[t.pos.size()-1]);
+        }
+        fclose(file);
+        runCount++;
+        cachedTuples.clear();
     }
 }
+
+void Indexer::dumpTuples () {
+    int doc, term;
+    Tuple t;
+
+    // sorted run
+    sort(cachedTuples.begin(), cachedTuples.end(), tupleSorter());
+    string filename = mergefolder + "/" + to_string(runCount) + ".txt";
+    FILE *file = fopen(filename.c_str(), "w");
+
+    // writes to file
+    for (int i = 0; i < cachedTuples.size(); i++) {
+        t = cachedTuples[i];
+        fprintf(file, "%d,%d,%d,", t.term, t.doc, t.pos.size());
+        for (int p = 0; p < t.pos.size()-1; p++) {
+            fprintf(file, "%d,", t.pos[p]);
+        }
+        fprintf(file, "%d\n", t.pos[t.pos.size()-1]);
+    }
+
+    fclose(file);
+    runCount++;
+    cachedTuples.clear();
+}
+
+// void Indexer::mergeDump () {
+    
+// }
 
 void Indexer::indexPage(string raw, string url) {
     string page = cleanHtml(raw);
@@ -91,22 +151,22 @@ void Indexer::indexPage(string raw, string url) {
     
     // frequency of terms
     for (int i = 0; i < terms.size(); i++) {
-        if (isStopWord(terms[i])) continue;
+        // if (isStopWord(terms[i])) continue;
         int termIndex = getTermCode(terms[i]);
         appearsAt[termIndex].push_back(i);
     }
 
     // store tuples
     map<int, vector<int> >::iterator it;
-    for (it = frequency.begin(); it != frequency.end(); it++) {
+    for (it = appearsAt.begin(); it != appearsAt.end(); it++) {
         int termIndex = it->first;
         vector<int> positions = it->second;
-        addTuple(termIndex, docIndex, tf);
+        addTuple(termIndex, docIndex, positions);
     }
 }
 
 void Indexer::run () {
-    string rawpage, page, file;
+    string rawpage, page, file, url;
     FileIterator it;
 
     for (string file : rawfiles) {
@@ -117,6 +177,12 @@ void Indexer::run () {
             indexPage(rawpage, url);
         }
     }
+
+    if (cachedTuples.size() > 0) {
+        dumpTuples();
+    }
+
+    // mergeDumps();
 }
 
 int main (int argc, char **argv) {
