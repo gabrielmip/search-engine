@@ -2,6 +2,8 @@
 
 using namespace std;
 
+typedef unsigned int uint;
+
 // for tuple sorting when writing a run to file
 struct tupleSorter {
     bool operator () (Tuple const &a, Tuple const &b) const {
@@ -33,7 +35,7 @@ struct pqTupleSorter {
 };
 
 // memory in megabytes
-Indexer::Indexer (string raw, string runs, string merge, string out, int memory) {
+Indexer::Indexer (string raw, string runs, string merge, string out, int memory, string logPath) {
     rawfolder = raw;
     runfolder = runs;
     mergefolder = merge;
@@ -41,6 +43,7 @@ Indexer::Indexer (string raw, string runs, string merge, string out, int memory)
     rawfiles = u.listdir(raw);
     MAX_NUM_TUPLES = (1000000 * memory) / (8 + 4*500);
     runCount = 0;
+    logFile = fopen(logPath.c_str(), "a");
 }
 
 vector<string> Indexer::tokenize (string page) {
@@ -303,8 +306,10 @@ void Indexer::outputIndex (string folder) {
 void Indexer::run () {
     string rawpage, page, file, url;
     FileIterator it;
+    uint pageIndexed = 0;
 
     // iterates over all raw html files
+    log(pageIndexed, 0);
     for (string file : rawfiles) {
         it.loadFile(rawfolder + '/' + file);
         while (!it.isFileOver()) {
@@ -312,21 +317,39 @@ void Indexer::run () {
             url = it.getUrl();
             if (url.size() > 0 and rawpage.size() > 0){
                 indexPage(rawpage, url);
+                if ((++pageIndexed % 10000) == 0) {
+                    log(pageIndexed, 0);
+                }
             }
         }
     }
-
+    
     if (cachedTuples.size() > 0) {
         dumpTuples();
     }
+    log(pageIndexed, 0);
+
+    // end of iteration over raw html files
+    // log(pageIndexed);
 
     // merges them
+    log(pageIndexed, 1);
     string finalFolder = mergeRuns(runfolder, mergefolder);
+    log(pageIndexed, 1);
+
     outputIndex(finalFolder);
+    fclose(logFile);
 }
 
+void Indexer::log (uint indexed, int type) {
+    time_t timer;
+    time(&timer);
+    fprintf(logFile, "%ld,%d,%d,%u\n", timer, type, MAX_NUM_TUPLES, indexed);
+}
+
+
 int main (int argc, char **argv) {
-    if (argc != 6) {
+    if (argc != 7) {
         cerr << "Few arguments." << endl;
         exit(1);
     }
@@ -336,7 +359,9 @@ int main (int argc, char **argv) {
     string mergeFolder = argv[3];
     string outputPath = argv[4];
     int memory = atoi(argv[5]);
+    string logPath = argv[6];
+
     Utils u;
-    Indexer indexer (docsFolder, runsFolder, mergeFolder, outputPath, memory);
+    Indexer indexer (docsFolder, runsFolder, mergeFolder, outputPath, memory, logPath);
     indexer.run();
 }

@@ -31,6 +31,7 @@ prep:
 	mkdir -p data/runs
 	mkdir -p data/merge
 	mkdir -p data/index
+	mkdir -p logs
 
 clean:
 	rm $(OBJ_DIR)/*.o indexer search

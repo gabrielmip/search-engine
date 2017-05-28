@@ -17,7 +17,7 @@ typedef unsigned int uint;
 
 class Indexer {
 public:
-    Indexer (std::string raw, std::string runs, std::string merge, std::string out, int memory);
+    Indexer (std::string raw, std::string runs, std::string merge, std::string out, int memory, std::string log);
     void run ();
     std::vector<std::string> tokenize (std::string page);
 
@@ -41,4 +41,6 @@ private:
     void outputIndex (std::string folder);
     int MAX_NUM_TUPLES;
     int runCount;
+    FILE *logFile;
+    void log (uint indexed, int type);
 };
