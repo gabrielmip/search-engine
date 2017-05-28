@@ -21,9 +21,14 @@ void RunIterator::loadFile (string path) {
 
     file = fopen(path.c_str(), "r");
     if (file == NULL) {
-        cerr << "Error loading file for run iterator: " << path << '.' << endl;
+        cerr << "Error loading file for run iterator: " << path << endl;
         exit (1);
     }
+}
+
+void RunIterator::close () {
+    if (file != NULL)
+        fclose(file);
 }
 
 bool RunIterator::isFileOver () {

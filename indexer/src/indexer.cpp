@@ -39,7 +39,7 @@ Indexer::Indexer (string raw, string runs, string merge, string out) {
     mergefolder = merge;
     outpath = out;
     rawfiles = u.listdir(raw);
-    MAX_NUM_TUPLES = 5;
+    MAX_NUM_TUPLES = 100;
     runCount = 0;
 }
 
@@ -68,7 +68,7 @@ string Indexer::cleanHtml (string raw) {
     string text = "";
 
     for (; it != dom.end(); ++it) {
-        if(it.node != 0 && dom.parent(it) != NULL){
+        if (it.node != 0 && dom.parent(it) != NULL){
             string tagName = dom.parent(it)->tagName();
             transform(tagName.begin(), tagName.end(), tagName.begin(), ::tolower);
 
@@ -89,16 +89,16 @@ string Indexer::cleanHtml (string raw) {
     return text;
 }
 
-int Indexer::getUrlCode (string url) {
-    map<string, int>::iterator it = urlCodes.find(url);    
+uint Indexer::getUrlCode (string url) {
+    map<string, uint>::iterator it = urlCodes.find(url);    
     if (it == urlCodes.end()) { // url wasnt found
         urlCodes[url] = urlCodes.size();
     }
     return urlCodes[url];
 }
 
-int Indexer::getTermCode (string term) {
-    map<string, int>::iterator it = vocabulary.find(term);    
+uint Indexer::getTermCode (string term) {
+    map<string, uint>::iterator it = vocabulary.find(term);    
     if (it == vocabulary.end()) { // term wasnt found
         // printf("%s wasnt found. code: %d\n", term.c_str(), vocabulary.size());
         vocabulary[term] = vocabulary.size();
@@ -106,7 +106,7 @@ int Indexer::getTermCode (string term) {
     return vocabulary[term];
 }
 
-void Indexer::addTuple (int term, int doc, vector<int> pos) {
+void Indexer::addTuple (uint term, uint doc, vector<uint> pos) {
     Tuple a;
     a.term = term;
     a.doc = doc;
@@ -130,10 +130,10 @@ void Indexer::dumpTuples () {
     for (int i = 0; i < cachedTuples.size(); i++) {
         t = cachedTuples[i];
         fprintf(file, "%d,%d,%lu,", t.term, t.doc, t.pos.size());
-        for (int p = 0; p < t.pos.size()-1; p++) {
-            fprintf(file, "%d,", t.pos[p]);
+        for (uint p = 0; p < t.pos.size()-1; p++) {
+            fprintf(file, "%u,", t.pos[p]);
         }
-        fprintf(file, "%d\n", t.pos[t.pos.size()-1]);
+        fprintf(file, "%u\n", t.pos[t.pos.size()-1]);
     }
 
     fclose(file);
@@ -193,10 +193,10 @@ string Indexer::mergeRuns (string folder, string otherFolder) {
             // writes to file (ugh)
             // printf("i: %d,\t<%d,%d,%lu>\n", index, tup.term, tup.doc, tup.pos.size());
             fprintf(mergedFile, "%d,%d,%lu,", tup.term, tup.doc, tup.pos.size());
-            for (int p = 0; p < tup.pos.size()-1; p++) {
-                fprintf(mergedFile, "%d,", tup.pos[p]);
+            for (uint p = 0; p < tup.pos.size()-1; p++) {
+                fprintf(mergedFile, "%u,", tup.pos[p]);
             }
-            fprintf(mergedFile, "%d\n", tup.pos[tup.pos.size()-1]);
+            fprintf(mergedFile, "%u\n", tup.pos[tup.pos.size()-1]);
 
             // inserts a new one if possible
             if (!runs[index].isFileOver()) {
@@ -211,6 +211,7 @@ string Indexer::mergeRuns (string folder, string otherFolder) {
     for (int i = 0; i < runPaths.size(); i++) {
         string name = folder + '/' + runPaths[i];
         remove(name.c_str());
+        runs[i].close();
     }
 
     runPaths.clear();
@@ -223,21 +224,21 @@ string Indexer::mergeRuns (string folder, string otherFolder) {
 void Indexer::indexPage(string raw, string url) {
     string page = cleanHtml(raw);
     vector<string> terms = tokenize(page);
-    int docIndex = getUrlCode(url);
-    map<int, vector<int> > appearsAt;
+    uint docIndex = getUrlCode(url);
+    map<uint, vector<uint> > appearsAt;
     
     // frequency of terms
     for (int i = 0; i < terms.size(); i++) {
         // if (isStopWord(terms[i])) continue;
-        int termIndex = getTermCode(terms[i]);
+        uint termIndex = getTermCode(terms[i]);
         appearsAt[termIndex].push_back(i);
     }
 
     // store tuples
-    map<int, vector<int> >::iterator it;
+    map<uint, vector<uint> >::iterator it;
     for (it = appearsAt.begin(); it != appearsAt.end(); it++) {
-        int termIndex = it->first;
-        vector<int> positions = it->second;
+        uint termIndex = it->first;
+        vector<uint> positions = it->second;
         addTuple(termIndex, docIndex, positions);
     }
 }
@@ -257,8 +258,8 @@ void Indexer::outputIndex (string folder) {
     rename(oldPath.c_str(), newPath.c_str());
 
     // creating inverse vocabulary hash map
-    map<int, string> invVocab;
-    map<string, int>::iterator it;
+    map<uint, string> invVocab;
+    map<string, uint>::iterator it;
     for (it = vocabulary.begin(); it != vocabulary.end(); it++) {
         invVocab[it->second] = it->first;
     }
@@ -269,7 +270,7 @@ void Indexer::outputIndex (string folder) {
     ifstream indexFile (newPath);
     string line;
     long long unsigned int pos = 0;
-    for (int i = 0; i < vocabulary.size(); i++) {
+    for (uint i = 0; i < vocabulary.size(); i++) {
         fprintf(vocabFile, "%d,%llu,%s\n", i, pos, invVocab[i].c_str());
         getline(indexFile, line);
         pos += line.size();

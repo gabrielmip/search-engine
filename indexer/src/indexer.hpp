@@ -12,6 +12,8 @@
 #include "file_iterator.hpp"
 #include "run_iterator.hpp"
 
+typedef unsigned int uint;
+
 class Indexer {
 public:
     Indexer (std::string raw, std::string runs, std::string merge, std::string out);
@@ -27,12 +29,12 @@ private:
     Utils u;
     std::string cleanHtml (std::string raw);
     void indexPage (std::string raw, std::string url);
-    std::map<std::string, int> vocabulary;
-    std::map<std::string, int> urlCodes;
+    std::map<std::string, uint> vocabulary;
+    std::map<std::string, uint> urlCodes;
     std::vector<Tuple> cachedTuples;
-    int getUrlCode (std::string url);
-    int getTermCode (std::string term);
-    void addTuple (int term, int doc, std::vector<int> pos);
+    uint getUrlCode (std::string url);
+    uint getTermCode (std::string term);
+    void addTuple (uint term, uint doc, std::vector<uint> pos);
     void dumpTuples ();
     std::string mergeRuns (std::string folder,std::string otherFolder);
     void outputIndex (std::string folder);
