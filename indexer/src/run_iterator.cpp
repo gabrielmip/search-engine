@@ -6,9 +6,9 @@ Tuple RunIterator::nextTuple () {
     Tuple t;
     char c = 42; // whatever
     int i, tf;
-    fscanf(file, "%d,%d,%d,", &t.term, &t.doc, &tf);
+    fscanf(file, "%u,%u,%u,", &t.term, &t.doc, &tf);
     while (c != '\n') {
-        fscanf(file, "%d", &i);
+        fscanf(file, "%u", &i);
         t.pos.push_back(i);
         c = fgetc(file);
     }

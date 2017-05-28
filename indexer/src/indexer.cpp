@@ -39,9 +39,7 @@ Indexer::Indexer (string raw, string runs, string merge, string out, int memory)
     mergefolder = merge;
     outpath = out;
     rawfiles = u.listdir(raw);
-    // MAX_NUM_TUPLES = (1000000 * memory) / (8 + 4*500);
-    cout <<  (1000000 * memory) / (8 + 4*500) << endl;
-    MAX_NUM_TUPLES = 500;
+    MAX_NUM_TUPLES = (1000000 * memory) / (8 + 4*500);
     runCount = 0;
 }
 
@@ -255,6 +253,7 @@ void Indexer::outputIndex (string folder) {
     string oldPath = folder + '/' + files[0];
     string newPath = outpath + "/index.txt";
     string vocabPath = outpath + "/vocab.txt";
+    string urlsPath = outpath + "/urls.txt";
 
     // moving index to output folder
     rename(oldPath.c_str(), newPath.c_str());
@@ -271,13 +270,32 @@ void Indexer::outputIndex (string folder) {
     FILE *vocabFile = fopen(vocabPath.c_str(), "w");
     ifstream indexFile (newPath);
     string line;
+    stringstream ss;
+    uint term, current;
+    term = current = 0;
     long long unsigned int pos = 0;
-    for (uint i = 0; i < vocabulary.size(); i++) {
-        fprintf(vocabFile, "%d,%llu,%s\n", i, pos, invVocab[i].c_str());
+
+    fprintf(vocabFile, "%d,%llu,%s\n", current, pos, invVocab[current].c_str());
+    while (!indexFile.eof()) {
         getline(indexFile, line);
-        pos += line.size();
+        
+        ss.str(line); // overkill...
+        ss >> term;
+        if (term != current) {
+            current = term;
+            fprintf(vocabFile, "%d,%llu,%s\n", current, pos, invVocab[current].c_str());
+        }
+        pos += line.size()+1; // +1 for newline
     }
 
+    // storing urls
+    FILE *urlsFile = fopen(urlsPath.c_str(), "w");
+    map<string, uint>::iterator urlit;
+    for (urlit = urlCodes.begin(); urlit != urlCodes.end(); urlit++) {
+        fprintf(urlsFile, "%u,%s\n", urlit->second, urlit->first.c_str());
+    }
+
+    fclose(urlsFile);
     indexFile.close();
     fclose(vocabFile);
 }
@@ -292,7 +310,9 @@ void Indexer::run () {
         while (!it.isFileOver()) {
             rawpage = it.nextPage();
             url = it.getUrl();
-            indexPage(rawpage, url);
+            if (url.size() > 0 and rawpage.size() > 0){
+                indexPage(rawpage, url);
+            }
         }
     }
 

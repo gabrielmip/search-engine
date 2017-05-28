@@ -3,6 +3,7 @@
 #include <vector>
 #include <regex>
 #include <fstream>
+#include <sstream>
 #include <iterator>
 #include <algorithm>
 #include <queue>
