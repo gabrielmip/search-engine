@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <fstream>
 #include <iterator>
 #include <algorithm>
 #include <queue>
@@ -34,6 +35,7 @@ private:
     void addTuple (int term, int doc, std::vector<int> pos);
     void dumpTuples ();
     std::string mergeRuns (std::string folder,std::string otherFolder);
+    void outputIndex (std::string folder);
     int MAX_NUM_TUPLES;
     int runCount;
 };

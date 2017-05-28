@@ -2,6 +2,7 @@
 
 using namespace std;
 
+// for tuple sorting when writing a run to file
 struct tupleSorter {
     bool operator () (Tuple const &a, Tuple const &b) const {
         if (a.term < b.term) return true;
@@ -15,7 +16,7 @@ struct tupleSorter {
     }
 };
 
-// priority queue
+// priority queue to merge runs
 struct pqTupleSorter {
     bool operator () (pair<Tuple, int> const &aa, pair<Tuple, int> const &bb) const {
         Tuple a = aa.first;
@@ -216,7 +217,7 @@ string Indexer::mergeRuns (string folder, string otherFolder) {
     runs.clear();
 
     // call function again, now for the merged runs
-    mergeRuns(otherFolder, folder);
+    return mergeRuns(otherFolder, folder);
 }
 
 void Indexer::indexPage(string raw, string url) {
@@ -241,10 +242,48 @@ void Indexer::indexPage(string raw, string url) {
     }
 }
 
+void Indexer::outputIndex (string folder) {
+    vector<string> files = u.listdir(folder);
+    if (files.size() > 1) {
+        cerr << "Final merge sort has more than one file." << endl;
+        exit (1);
+    }
+
+    string oldPath = folder + '/' + files[0];
+    string newPath = outpath + "/index.txt";
+    string vocabPath = outpath + "/vocab.txt";
+
+    // moving index to output folder
+    rename(oldPath.c_str(), newPath.c_str());
+
+    // creating inverse vocabulary hash map
+    map<int, string> invVocab;
+    map<string, int>::iterator it;
+    for (it = vocabulary.begin(); it != vocabulary.end(); it++) {
+        invVocab[it->second] = it->first;
+    }
+
+    // storing vocabulary together with position on index file
+    // FILE *indexFile = fopen(newPath.c_str(), "r");
+    FILE *vocabFile = fopen(vocabPath.c_str(), "w");
+    ifstream indexFile (newPath);
+    string line;
+    long long unsigned int pos = 0;
+    for (int i = 0; i < vocabulary.size(); i++) {
+        fprintf(vocabFile, "%d,%llu,%s\n", i, pos, invVocab[i].c_str());
+        getline(indexFile, line);
+        pos += line.size();
+    }
+
+    indexFile.close();
+    fclose(vocabFile);
+}
+
 void Indexer::run () {
     string rawpage, page, file, url;
     FileIterator it;
 
+    // iterates over all raw html files
     for (string file : rawfiles) {
         it.loadFile(rawfolder + '/' + file);
         while (!it.isFileOver()) {
@@ -258,7 +297,9 @@ void Indexer::run () {
         dumpTuples();
     }
 
+    // merges them
     string finalFolder = mergeRuns(runfolder, mergefolder);
+    outputIndex(finalFolder);
 }
 
 int main (int argc, char **argv) {
@@ -267,19 +308,6 @@ int main (int argc, char **argv) {
         exit(1);
     }
 
-    // RunIterator r;
-    // r.loadFile("data/0.txt");
-    // while (!r.isFileOver()) {
-    //     Tuple tup = r.nextTuple();
-    //     printf("<%d,%d,%lu>\n", tup.term, tup.doc, tup.pos.size());
-    //     for (int i = 0; i < tup.pos.size(); i++) {
-    //         printf("%d,", tup.pos[i]);
-    //     }
-    //     printf("\n");
-    // }
-
-
-
     string docsFolder = argv[1];
     string runsFolder = argv[2];
     string mergeFolder = argv[3];
@@ -287,6 +315,4 @@ int main (int argc, char **argv) {
     Utils u;
     Indexer indexer (docsFolder, runsFolder, mergeFolder, outputPath);
     indexer.run();
-
-
 }
