@@ -32,14 +32,16 @@ struct pqTupleSorter {
     }
 };
 
-
-Indexer::Indexer (string raw, string runs, string merge, string out) {
+// memory in megabytes
+Indexer::Indexer (string raw, string runs, string merge, string out, int memory) {
     rawfolder = raw;
     runfolder = runs;
     mergefolder = merge;
     outpath = out;
     rawfiles = u.listdir(raw);
-    MAX_NUM_TUPLES = 100;
+    // MAX_NUM_TUPLES = (1000000 * memory) / (8 + 4*500);
+    cout <<  (1000000 * memory) / (8 + 4*500) << endl;
+    MAX_NUM_TUPLES = 500;
     runCount = 0;
 }
 
@@ -304,7 +306,7 @@ void Indexer::run () {
 }
 
 int main (int argc, char **argv) {
-    if (argc != 5) {
+    if (argc != 6) {
         cerr << "Few arguments." << endl;
         exit(1);
     }
@@ -313,7 +315,8 @@ int main (int argc, char **argv) {
     string runsFolder = argv[2];
     string mergeFolder = argv[3];
     string outputPath = argv[4];
+    int memory = atoi(argv[5]);
     Utils u;
-    Indexer indexer (docsFolder, runsFolder, mergeFolder, outputPath);
+    Indexer indexer (docsFolder, runsFolder, mergeFolder, outputPath, memory);
     indexer.run();
 }

@@ -27,6 +27,8 @@ run_iterator:
 prep:
 	clear
 	mkdir -p $(OBJ_DIR)
+	rm -R data/runs
+	rm -R data/merge
 	mkdir -p data/docs
 	mkdir -p data/runs
 	mkdir -p data/merge

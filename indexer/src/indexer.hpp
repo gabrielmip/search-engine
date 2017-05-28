@@ -16,7 +16,7 @@ typedef unsigned int uint;
 
 class Indexer {
 public:
-    Indexer (std::string raw, std::string runs, std::string merge, std::string out);
+    Indexer (std::string raw, std::string runs, std::string merge, std::string out, int memory);
     void run ();
     std::vector<std::string> tokenize (std::string page);
 
