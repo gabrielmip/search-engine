@@ -50,24 +50,11 @@ vector<string> Indexer::tokenize (string page) {
     vector<string> tokens;
     string token;
     uint current, previous;
-    
-    // regex rgx("[\\t\\s\\n\\r\\.,;:!?^'\"@#$\\%&*(){}[\\]\\-+=_/\\|<>]");
-    // sregex_token_iterator it (page.begin(), page.end(), rgx, -1);
-    // sregex_token_iterator end;
-    // while (it != end) {
-    //     token = it->str();
-    //     if (token.size() > 0) {
-    //         tokens.push_back(token);
-    //     }
-    //     it++;
-    // }
-
     vector<char> separators = {'\t',' ','\n','\r','.',',',';',':','!','?','^','\'','"','@','#','$','%','&','*','(',')','{','}','[',']','-','+','=','_','/','\\','|','<','>'};
     current = previous = 0;
     while (current < page.size()) {
         // iterates over separators to see if end of word was found
         for (int i = 0; i < separators.size(); i++) {
-            // if it was
             if (page[current] == separators[i]) {
                 // word is considered if size is greater than 0, ofc
                 if (current-previous > 0) {
@@ -89,6 +76,7 @@ string Indexer::cleanHtml (string raw) {
     tree<htmlcxx::HTML::Node>::iterator it = dom.begin();
 
     string text = "";
+    string formatted;
 
     for (; it != dom.end(); ++it) {
         if (it.node != 0 && dom.parent(it) != NULL){
@@ -106,7 +94,8 @@ string Indexer::cleanHtml (string raw) {
         }
 
         if ((!it->isTag()) && (!it->isComment())) {
-            text.append(it->text()+" ");
+            formatted = u.cleanTerm(it->text());
+            text.append(formatted+" ");
         }
     }
     return text;
