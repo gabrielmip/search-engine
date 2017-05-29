@@ -49,16 +49,36 @@ Indexer::Indexer (string raw, string runs, string merge, string out, int memory,
 vector<string> Indexer::tokenize (string page) {
     vector<string> tokens;
     string token;
-    regex rgx("[\\t\\s\\n\\r\\.,;:!?^'\"@#$\\%&*(){}[\\]\\-+=_/\\|<>]");
-    sregex_token_iterator it (page.begin(), page.end(), rgx, -1);
-    sregex_token_iterator end;
+    uint current, previous;
     
-    while (it != end) {
-        token = it->str();
-        if (token.size() > 0) {
-            tokens.push_back(token);
+    // regex rgx("[\\t\\s\\n\\r\\.,;:!?^'\"@#$\\%&*(){}[\\]\\-+=_/\\|<>]");
+    // sregex_token_iterator it (page.begin(), page.end(), rgx, -1);
+    // sregex_token_iterator end;
+    // while (it != end) {
+    //     token = it->str();
+    //     if (token.size() > 0) {
+    //         tokens.push_back(token);
+    //     }
+    //     it++;
+    // }
+
+    vector<char> separators = {'\t',' ','\n','\r','.',',',';',':','!','?','^','\'','"','@','#','$','%','&','*','(',')','{','}','[',']','-','+','=','_','/','\\','|','<','>'};
+    current = previous = 0;
+    while (current < page.size()) {
+        // iterates over separators to see if end of word was found
+        for (int i = 0; i < separators.size(); i++) {
+            // if it was
+            if (page[current] == separators[i]) {
+                // word is considered if size is greater than 0, ofc
+                if (current-previous > 0) {
+                    token = page.substr(previous, current-previous);
+                    tokens.push_back(token);
+                }
+                previous = current + 1;
+                break;
+            }
         }
-        it++;
+        current++;
     }
     return tokens;
 }
@@ -346,7 +366,6 @@ void Indexer::log (uint indexed, int type) {
     time(&timer);
     fprintf(logFile, "%ld,%d,%d,%u\n", timer, type, MAX_NUM_TUPLES, indexed);
 }
-
 
 int main (int argc, char **argv) {
     if (argc != 7) {
