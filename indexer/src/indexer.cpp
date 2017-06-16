@@ -178,81 +178,104 @@ void Indexer::dumpTuples () {
 // recursive function that calls itself until there is only
 // one file on the folder passed as parameter.
 string Indexer::mergeRuns (string folder, string otherFolder) {
-    // vector<string> runPaths = u.listdir(folder);
-    // if (runPaths.size() == 1) { // merge is done
-    //     return folder;
-    // }
-    
-    // Tuple tup;
-    // pair<Tuple, int> tuppair;
-    // vector<RunIterator> runs (runPaths.size());
-    // priority_queue<pair<Tuple, int>, vector<pair<Tuple, int> >, pqTupleSorter> heap;
+    string primaryFolder, secondaryFolder, auxFolder;
 
-    // // init run iterators
-    // for (int i = 0; i < runPaths.size(); i++) {
-    //     runs[i].loadFile(folder + '/' + runPaths[i]);
-    // }
+    ////////////////////////////////////
+        //standard inverted index//
+    ////////////////////////////////////
+    Tuple tup;
+    pair<Tuple, int> tuppair;
+    vector<string> runPaths = u.listdir(folder);
+    vector<RunIterator> runs (runPaths.size());
+    priority_queue<pair<Tuple, int>, vector<pair<Tuple, int> >, pqTupleSorter> heap;
+    uint numWays = MAX_MEM_USAGE / 100; // 100 bytes for each tuple;
+    primaryFolder = folder;
+    secondaryFolder = otherFolder;
 
-    // // number of individual segments to be analysed
-    // for (int i = 0; i <= runPaths.size()/MAX_NUM_TUPLES; i++) {
-    //     // segment interval
-    //     int lowLim = i * runPaths.size()/MAX_NUM_TUPLES;
-    //     int highLim = lowLim + 1 + runPaths.size()/MAX_NUM_TUPLES;
-    //     if (highLim >= runPaths.size()) {
-    //         highLim = runPaths.size() - 1;
-    //     }
+    while (runPaths.size() > 1) {
+        // segments to be analysed considering numWays and runPaths.size()
+        int numSegments = runPaths.size()/numWays;
+        for (int i = 0; i <= numSegments; i++) {
+            // interval from segment being analysed
+            int lower = i * numSegments;
+            int higher = lower + 1 + numSegments;
+            if (higher >= runPaths.size()) {
+                higher = runPaths.size() - 1;
+            }
+
+            // filling heap
+            int index = lower;
+            bool pushedSomething = false;
+            while (heap.size() < numWays) {
+                if (!runs[index].isFileOver()) {
+                    tup = runs[index].nextTuple();
+                    heap.push(make_pair(tup, index));
+                    pushedSomething = true;
+                }
+                if (index+1 > higher) {
+                    if (!pushedSomething) break;
+                    index = lower;
+                    pushedSomething = false;
+                } else {
+                    index++;
+                }
+            }
+
+            // file with merged runs
+            string mergedName = secondaryFolder + '/' + to_string(i) + ".txt";
+            FILE *mergedFile = fopen(mergedName.c_str(), "w");            
+            
+            // pops heap, writes to merged run's file and pushs
+            // a tuple from the run where the popped one came from
+            while (!heap.empty()) {
+                tuppair = heap.top();
+                tup = tuppair.first;
+                index = tuppair.second;
+                heap.pop();
+
+                // writes to file (ugh)
+                // printf("i: %d,\t<%d,%d,%lu>\n", index, tup.term, tup.doc, tup.pos.size());
+                fprintf(mergedFile, "%d,%d,%lu,", tup.term, tup.doc, tup.pos.size());
+                for (uint p = 0; p < tup.pos.size()-1; p++) {
+                    fprintf(mergedFile, "%u,", tup.pos[p]);
+                }
+                fprintf(mergedFile, "%u\n", tup.pos[tup.pos.size()-1]);
+
+                // inserts a new one if possible
+                if (!runs[index].isFileOver()) {
+                    tup = runs[index].nextTuple();
+                    heap.push(make_pair(tup, index));
+                }
+            }
+            fclose(mergedFile);
+        }
+
+        // deleting original run files
+        for (int i = 0; i < runPaths.size(); i++) {
+            string name = primaryFolder + '/' + runPaths[i];
+            remove(name.c_str());
+            runs[i].close();
+        }
+
+        runPaths.clear();
+        runs.clear();
+        runPaths = u.listdir(secondaryFolder); // otherfolder
         
-    //     // filling heap
-    //     int index = lowLim;
-    //     while (heap.size() < MAX_NUM_TUPLES) {
-    //         if (!runs[index].isFileOver()) {
-    //             tup = runs[index].nextTuple();
-    //             heap.push(make_pair(tup, index));
-    //         }
-    //         index = (index+1 > highLim) ? lowLim : index+1;
-    //     }
+        auxFolder = primaryFolder;
+        primaryFolder = secondaryFolder;
+        secondaryFolder = auxFolder;
+    }
 
-    //     // file with merged runs
-    //     string mergedName = otherFolder + '/' + to_string(i) + ".txt";
-    //     FILE *mergedFile = fopen(mergedName.c_str(), "w");
-        
-    //     // pops heap, writes to merged run's file and pushs
-    //     // a tuple from the run where the popped one came from
-    //     while (!heap.empty()) {
-    //         tuppair = heap.top();
-    //         tup = tuppair.first;
-    //         index = tuppair.second;
-    //         heap.pop();
+    if (primaryFolder != folder) {
+        runPaths = u.listdir(secondaryFolder);
+        for (int i = 0; i < runPaths.size(); i++) {
+            rename((secondaryFolder +'/'+ runPaths[i]).c_str(), (primaryFolder +'/'+ runPaths[i]).c_str());
+        }
+    }
+}
 
-    //         // writes to file (ugh)
-    //         // printf("i: %d,\t<%d,%d,%lu>\n", index, tup.term, tup.doc, tup.pos.size());
-    //         fprintf(mergedFile, "%d,%d,%lu,", tup.term, tup.doc, tup.pos.size());
-    //         for (uint p = 0; p < tup.pos.size()-1; p++) {
-    //             fprintf(mergedFile, "%u,", tup.pos[p]);
-    //         }
-    //         fprintf(mergedFile, "%u\n", tup.pos[tup.pos.size()-1]);
-
-    //         // inserts a new one if possible
-    //         if (!runs[index].isFileOver()) {
-    //             tup = runs[index].nextTuple();
-    //             heap.push(make_pair(tup, index));
-    //         }
-    //     }
-    //     fclose(mergedFile);
-    // }
+void mergeAnchorTextRuns (string primary) {
     
-    // // deleting original run files
-    // for (int i = 0; i < runPaths.size(); i++) {
-    //     string name = folder + '/' + runPaths[i];
-    //     remove(name.c_str());
-    //     runs[i].close();
-    // }
-
-    // runPaths.clear();
-    // runs.clear();
-
-    // call function again, now for the merged runs
-    return mergeRuns(otherFolder, folder);
 }
 
 // parses page html, getting indexable tokens and hrefs 
