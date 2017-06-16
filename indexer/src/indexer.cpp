@@ -18,6 +18,17 @@ struct tupleSorter {
     }
 };
 
+// comparator for link sorting
+struct linkSorter {
+    bool operator () (pair<uint, uint> const &a, pair<uint, uint> const &b) const {
+        if (a.first < b.first) return true;
+        else if (a.first == b.first) {
+            if (a.second <= b.second) return true;
+            else return false;
+        } else return false;
+    }
+};
+
 // priority queue to merge runs
 struct pqTupleSorter {
     bool operator () (pair<Tuple, int> const &aa, pair<Tuple, int> const &bb) const {
@@ -41,7 +52,7 @@ Indexer::Indexer (string raw, string runs, string merge, string out, int memory,
     mergefolder = merge;
     outpath = out;
     rawfiles = u.listdir(raw);
-    MAX_NUM_TUPLES = (1000000 * memory) / (8 + 4*500);
+    MAX_MEM_USAGE = memory; // bytes
     runCount = 0;
     logFile = fopen(logPath.c_str(), "a");
 }
@@ -71,51 +82,40 @@ vector<string> Indexer::tokenize (string page) {
 }
 
 string Indexer::cleanHtml (string raw) {
-    htmlcxx::HTML::ParserDom parser;
-    tree<htmlcxx::HTML::Node> dom = parser.parseTree(raw);
-    tree<htmlcxx::HTML::Node>::iterator it = dom.begin();
-
     string text = "";
-    string formatted;
-
-    for (; it != dom.end(); ++it) {
-        if (it.node != 0 && dom.parent(it) != NULL){
-            string tagName = dom.parent(it)->tagName();
-            transform(tagName.begin(), tagName.end(), tagName.begin(), ::tolower);
-
-            // Skipping code embedded in html
-            if ((tagName == "script") ||
-                (tagName == "noscript") ||
-                (tagName == "style")
-                ){
-                it.skip_children();
-                continue;
-            }
-        }
-
-        if ((!it->isTag()) && (!it->isComment())) {
-            formatted = u.cleanTerm(it->text());
-            text.append(formatted+" ");
-        }
-    }
     return text;
 }
 
-uint Indexer::getUrlCode (string url) {
-    map<string, uint>::iterator it = urlCodes.find(url);    
+uint Indexer::getUrlCode (string url, map<string, uint> m) {
+    map<string, uint>::iterator it = m.find(url);    
     if (it == urlCodes.end()) { // url wasnt found
         urlCodes[url] = urlCodes.size();
     }
     return urlCodes[url];
 }
 
-uint Indexer::getTermCode (string term) {
-    map<string, uint>::iterator it = vocabulary.find(term);    
-    if (it == vocabulary.end()) { // term wasnt found
-        // printf("%s wasnt found. code: %d\n", term.c_str(), vocabulary.size());
-        vocabulary[term] = vocabulary.size();
+uint Indexer::getTermCode (string term, map<string, uint> m) {
+    map<string, uint>::iterator it = m.find(term);
+    if (it == m.end()) { // term wasnt found
+        m[term] = m.size();
     }
-    return vocabulary[term];
+    return m[term];
+}
+
+void Indexer::cacheLink (uint origin, uint dest) {
+    cachedLinks.push_back(make_pair(origin, dest));
+    memoryUsed += 2 * sizeof(uint);
+    if (memoryUsed > MAX_MEM_USAGE) {
+        dumpTuples();
+    }
+}
+
+void Indexer::cacheAnchorTerm (uint term, uint dest) {
+    cachedAnchorTuples.push_back(make_pair(term, dest));
+    memoryUsed += 2 * sizeof(uint);
+    if (memoryUsed > MAX_MEM_USAGE) {
+        dumpTuples();
+    }
 }
 
 void Indexer::addTuple (uint term, uint doc, vector<uint> pos) {
@@ -124,14 +124,15 @@ void Indexer::addTuple (uint term, uint doc, vector<uint> pos) {
     a.doc = doc;
     a.pos = pos;
     cachedTuples.push_back(a);
-
-    // sort and store in files
-    if (cachedTuples.size() > MAX_NUM_TUPLES) {
+    memoryUsed += (2 + pos.size()) * sizeof(uint);
+    if (memoryUsed > MAX_MEM_USAGE) {
         dumpTuples();
     }
 }
 
 void Indexer::dumpTuples () {
+    memoryUsed = 0;
+
     // sorted run
     sort(cachedTuples.begin(), cachedTuples.end(), tupleSorter());
     string filename = runfolder + "/" + to_string(runCount) + ".txt";
@@ -149,108 +150,180 @@ void Indexer::dumpTuples () {
     }
 
     fclose(file);
+
+    // page rank
+    sort(cachedLinks.begin(), cachedLinks.end(), linkSorter());
+    filename = runfolder + "/" + to_string(runCount) + ".txt";
+    file = fopen(filename.c_str(), "w");
+
+    // writes to file
+    pair<uint, uint> p;
+    for (int i = 0; i < cachedLinks.size(); i++) {
+        p = cachedLinks[i];
+        fprintf(file, "%u,%u\n", p.first, p.second);
+    }
+    fclose(file);
+
     runCount++;
     cachedTuples.clear();
+    cachedLinks.clear();
 }
 
 // recursive function that calls itself until there is only
 // one file on the folder passed as parameter.
 string Indexer::mergeRuns (string folder, string otherFolder) {
-    vector<string> runPaths = u.listdir(folder);
-    if (runPaths.size() == 1) { // merge is done
-        return folder;
-    }
+    // vector<string> runPaths = u.listdir(folder);
+    // if (runPaths.size() == 1) { // merge is done
+    //     return folder;
+    // }
     
-    Tuple tup;
-    pair<Tuple, int> tuppair;
-    vector<RunIterator> runs (runPaths.size());
-    priority_queue<pair<Tuple, int>, vector<pair<Tuple, int> >, pqTupleSorter> heap;
+    // Tuple tup;
+    // pair<Tuple, int> tuppair;
+    // vector<RunIterator> runs (runPaths.size());
+    // priority_queue<pair<Tuple, int>, vector<pair<Tuple, int> >, pqTupleSorter> heap;
 
-    // init run iterators
-    for (int i = 0; i < runPaths.size(); i++) {
-        runs[i].loadFile(folder + '/' + runPaths[i]);
-    }
+    // // init run iterators
+    // for (int i = 0; i < runPaths.size(); i++) {
+    //     runs[i].loadFile(folder + '/' + runPaths[i]);
+    // }
 
-    // number of individual segments to be analysed
-    for (int i = 0; i <= runPaths.size()/MAX_NUM_TUPLES; i++) {
-        // segment interval
-        int lowLim = i * runPaths.size()/MAX_NUM_TUPLES;
-        int highLim = lowLim + 1 + runPaths.size()/MAX_NUM_TUPLES;
-        if (highLim >= runPaths.size()) {
-            highLim = runPaths.size() - 1;
-        }
+    // // number of individual segments to be analysed
+    // for (int i = 0; i <= runPaths.size()/MAX_NUM_TUPLES; i++) {
+    //     // segment interval
+    //     int lowLim = i * runPaths.size()/MAX_NUM_TUPLES;
+    //     int highLim = lowLim + 1 + runPaths.size()/MAX_NUM_TUPLES;
+    //     if (highLim >= runPaths.size()) {
+    //         highLim = runPaths.size() - 1;
+    //     }
         
-        // filling heap
-        int index = lowLim;
-        while (heap.size() < MAX_NUM_TUPLES) {
-            if (!runs[index].isFileOver()) {
-                tup = runs[index].nextTuple();
-                heap.push(make_pair(tup, index));
-            }
-            index = (index+1 > highLim) ? lowLim : index+1;
-        }
+    //     // filling heap
+    //     int index = lowLim;
+    //     while (heap.size() < MAX_NUM_TUPLES) {
+    //         if (!runs[index].isFileOver()) {
+    //             tup = runs[index].nextTuple();
+    //             heap.push(make_pair(tup, index));
+    //         }
+    //         index = (index+1 > highLim) ? lowLim : index+1;
+    //     }
 
-        // file with merged runs
-        string mergedName = otherFolder + '/' + to_string(i) + ".txt";
-        FILE *mergedFile = fopen(mergedName.c_str(), "w");
+    //     // file with merged runs
+    //     string mergedName = otherFolder + '/' + to_string(i) + ".txt";
+    //     FILE *mergedFile = fopen(mergedName.c_str(), "w");
         
-        // pops heap, writes to merged run's file and pushs
-        // a tuple from the run where the popped one came from
-        while (!heap.empty()) {
-            tuppair = heap.top();
-            tup = tuppair.first;
-            index = tuppair.second;
-            heap.pop();
+    //     // pops heap, writes to merged run's file and pushs
+    //     // a tuple from the run where the popped one came from
+    //     while (!heap.empty()) {
+    //         tuppair = heap.top();
+    //         tup = tuppair.first;
+    //         index = tuppair.second;
+    //         heap.pop();
 
-            // writes to file (ugh)
-            // printf("i: %d,\t<%d,%d,%lu>\n", index, tup.term, tup.doc, tup.pos.size());
-            fprintf(mergedFile, "%d,%d,%lu,", tup.term, tup.doc, tup.pos.size());
-            for (uint p = 0; p < tup.pos.size()-1; p++) {
-                fprintf(mergedFile, "%u,", tup.pos[p]);
-            }
-            fprintf(mergedFile, "%u\n", tup.pos[tup.pos.size()-1]);
+    //         // writes to file (ugh)
+    //         // printf("i: %d,\t<%d,%d,%lu>\n", index, tup.term, tup.doc, tup.pos.size());
+    //         fprintf(mergedFile, "%d,%d,%lu,", tup.term, tup.doc, tup.pos.size());
+    //         for (uint p = 0; p < tup.pos.size()-1; p++) {
+    //             fprintf(mergedFile, "%u,", tup.pos[p]);
+    //         }
+    //         fprintf(mergedFile, "%u\n", tup.pos[tup.pos.size()-1]);
 
-            // inserts a new one if possible
-            if (!runs[index].isFileOver()) {
-                tup = runs[index].nextTuple();
-                heap.push(make_pair(tup, index));
-            }
-        }
-        fclose(mergedFile);
-    }
+    //         // inserts a new one if possible
+    //         if (!runs[index].isFileOver()) {
+    //             tup = runs[index].nextTuple();
+    //             heap.push(make_pair(tup, index));
+    //         }
+    //     }
+    //     fclose(mergedFile);
+    // }
     
-    // deleting original run files
-    for (int i = 0; i < runPaths.size(); i++) {
-        string name = folder + '/' + runPaths[i];
-        remove(name.c_str());
-        runs[i].close();
-    }
+    // // deleting original run files
+    // for (int i = 0; i < runPaths.size(); i++) {
+    //     string name = folder + '/' + runPaths[i];
+    //     remove(name.c_str());
+    //     runs[i].close();
+    // }
 
-    runPaths.clear();
-    runs.clear();
+    // runPaths.clear();
+    // runs.clear();
 
     // call function again, now for the merged runs
     return mergeRuns(otherFolder, folder);
 }
 
+// parses page html, getting indexable tokens and hrefs 
+// for pagerank calculation and anchor text indexing
 void Indexer::indexPage(string raw, string url) {
-    string page = cleanHtml(raw);
-    vector<string> terms = tokenize(page);
-    uint docIndex = getUrlCode(url);
+    uint docIndex = getUrlCode(url, urlCodes);
+    uint docIndexPageRank = getUrlCode(url, pageRankUrlCodes);
+    uint dest;
+    pair<bool, string> attr;
+    map<string, string> attrs;
     map<uint, vector<uint> > appearsAt;
+    string phrase;
+    Tuple a;
     
-    // frequency of terms
-    for (int i = 0; i < terms.size(); i++) {
-        // if (isStopWord(terms[i])) continue;
-        uint termIndex = getTermCode(terms[i]);
-        appearsAt[termIndex].push_back(i);
+    htmlcxx::HTML::ParserDom parser;
+    tree<htmlcxx::HTML::Node> dom = parser.parseTree(raw);
+    tree<htmlcxx::HTML::Node>::iterator it = dom.begin();
+    vector<string> terms;
+
+    // navigates through page's parsing tree
+    for (; it != dom.end(); ++it) {
+        if (it.node != 0 && dom.parent(it) != NULL){
+            string tagName = dom.parent(it)->tagName();
+            transform(tagName.begin(), tagName.end(), tagName.begin(), ::tolower);
+
+            // anchor text and links for pagerank calculation
+            if (tagName == "a") {
+                it->parseAttributes();
+                attrs = it->attributes();
+                
+                // if there isnt href attribute on <a>
+                if (attrs["href"].size() == 0)
+                    continue;
+                
+                // page rank
+                dest = getUrlCode(attrs["href"], pageRankUrlCodes);
+                cacheLink(docIndexPageRank, dest);
+                
+                // anchor text
+                phrase = u.cleanTerm(it->text());
+                terms = tokenize(phrase);
+                for (int i = 0; i < terms.size(); i++) {
+                    if (u.isStopWord(terms[i])) continue;
+                    uint termIndex = getTermCode(terms[i], anchorVocabulary);
+                    cacheAnchorTerm(termIndex, dest);
+                }
+
+                continue;
+            }
+
+            // Skipping code embedded in html
+            if ((tagName == "script") ||
+                (tagName == "noscript") ||
+                (tagName == "style")
+                ){
+                it.skip_children();
+                continue;
+            }
+        }
+
+        if ((!it->isTag()) && (!it->isComment())) {
+            phrase = u.cleanTerm(it->text());
+            terms = tokenize(phrase);
+            
+            for (int i = 0; i < terms.size(); i++) {
+                if (u.isStopWord(terms[i])) continue;
+                uint termIndex = getTermCode(terms[i], vocabulary);
+                appearsAt[termIndex].push_back(i);
+            }
+        }
     }
 
     // store tuples
-    map<uint, vector<uint> >::iterator it;
-    for (it = appearsAt.begin(); it != appearsAt.end(); it++) {
-        uint termIndex = it->first;
-        vector<uint> positions = it->second;
+    map<uint, vector<uint> >::iterator mt;
+    for (mt = appearsAt.begin(); mt != appearsAt.end(); mt++) {
+        uint termIndex = mt->first;
+        vector<uint> positions = mt->second;
         addTuple(termIndex, docIndex, positions);
     }
 }
@@ -353,7 +426,7 @@ void Indexer::run () {
 void Indexer::log (uint indexed, int type) {
     time_t timer;
     time(&timer);
-    fprintf(logFile, "%ld,%d,%d,%u\n", timer, type, MAX_NUM_TUPLES, indexed);
+    // fprintf(logFile, "%ld,%d,%d,%u\n", timer, type, MAX_NUM_TUPLES, indexed);
 }
 
 int main (int argc, char **argv) {

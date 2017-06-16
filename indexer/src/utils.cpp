@@ -3,7 +3,12 @@
 using namespace std;
 
 Utils::Utils () {
-
+    FILE *file = fopen("stopwords.txt", "r");
+    char word [80];
+    while (fscanf(file, "%s\n", word) == 1){
+        stopWords.push_back(word);
+    }
+    fclose(file);
 }
 
 vector<string> Utils::listdir (string folder) {
@@ -36,5 +41,12 @@ string Utils::cleanTerm (string term) {
     // lower case
     transform(term.begin(), term.end(), term.begin(), ::tolower);
     return term;
+}
+
+bool Utils::isStopWord (string word) {
+    for (int i = 0; i < stopWords.size(); i++){
+        if (stopWords[i] == word) return true;
+    }
+    return false;
 }
 

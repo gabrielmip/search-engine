@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <regex>
 #include <fstream>
 #include <sstream>
 #include <iterator>
@@ -30,16 +29,32 @@ private:
     Utils u;
     std::string cleanHtml (std::string raw);
     void indexPage (std::string raw, std::string url);
-    std::map<std::string, uint> vocabulary;
-    std::map<std::string, uint> urlCodes;
+    
+    // tuples
     std::vector<Tuple> cachedTuples;
-    uint getUrlCode (std::string url);
-    uint getTermCode (std::string term);
+    std::vector<std::pair<uint, uint> > cachedAnchorTuples;
+    std::vector<std::pair<uint, uint> > cachedLinks;
+    
+    // url codes
+    std::map<std::string, uint> urlCodes;
+    std::map<std::string, uint> pageRankUrlCodes;
+    uint getUrlCode (std::string url, std::map<std::string, uint> m);
+
+    // vocab
+    std::map<std::string, uint> vocabulary;
+    std::map<std::string, uint> anchorVocabulary;
+    uint getTermCode (std::string term, std::map<std::string, uint> m);
+    
+    // manage cache
     void addTuple (uint term, uint doc, std::vector<uint> pos);
+    void cacheLink (uint origin, uint dest);
+    void cacheAnchorTerm (uint dest, uint term);
     void dumpTuples ();
+
     std::string mergeRuns (std::string folder,std::string otherFolder);
     void outputIndex (std::string folder);
-    int MAX_NUM_TUPLES;
+    uint MAX_MEM_USAGE;
+    uint memoryUsed;
     int runCount;
     FILE *logFile;
     void log (uint indexed, int type);

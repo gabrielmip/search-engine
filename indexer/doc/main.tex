@@ -46,7 +46,7 @@
 		\usefont{OT1}{bch}{b}{n}
 		\normalfont \normalsize \textsc{UFMG - Departamento de Ciência da Computação} \\ [25pt]
 		\horrule{0.5pt} \\[0.4cm]
-		\huge Coletor para a Web Brasileira \\
+		\huge Indexador de páginas da Web \\
 		\horrule{2pt} \\[0.5cm]
 }
 \author{
@@ -61,97 +61,63 @@
 \begin{document}
 \maketitle
 \section{Introdução}
-O desenvolvimento da rede mundial de computadores criou a necessidade de recuperar as informações nela contida através de máquinas de busca. Uma das etapas da construção de uma máquina de busca da Web é a coleta de suas páginas.
+A recuperação de informação é uma tarefa importante quando tratamos de coleções de dados. Quando a quantidade de dados é grande, boas estratégias devem ser adotadas para que as buscas possam ser feitas em tempo hábil. Os dados passam a ser organizados na forma dos chamados índices invertidos de documento, no qual uma palavra referencia os documentos nos quais aparece, em vez do contrário. 
 
-O primeiro trabalho da disciplina de Recuperação da Informação tem como objetivo a construção de um coletor da Web brasileira que seja horizontal, ou seja, que foque em buscar a maior quantidade possível de domínios. O coletor deve ser respeitoso com os domínios visitados, não sobrecarregando servidores. Instruções dadas pelos sítios para coleta devem ser respeitadas.
+A tarefa do segundo trabalho prático da disciplina de Recuperação da informação é implementar um indexador de páginas Web. O objetivo é realizar a análise das páginas HTML, extrair os termos indexáveis e gerar o índice invertido usando memória externa.
 
-\section{O Coletor}
-A coleta das páginas começa em um determinado conjunto de páginas semente. Através dos \textit{links} presentes em cada uma dessas páginas, a navegação pela rede de computadores continua, coletando páginas e outros endereços nelas presentes. O carregamento das páginas e extração de \textit{links} foi feita através da versão gratuita da biblioteca Chilkat Spider \footnote{Disponível em \url{https://www.chilkatsoft.com/chilkatLinux.asp}}.
+\section{O indexador}
+\subsection{Extração dos termos}
+A criação do índice começa com a análise das páginas Web da coleção. Essa tarefa é auxiliada pela biblioteca htmlcxx~\footnote{Disponível em: \url{http://htmlcxx.sourceforge.net}} que gera árvores de análise sintática do HTML da página e facilita a extração dos termos indexáveis. Termos extraídos são normalizados e reescritos em caixa baixa.
 
-Para cumprir os requerimentos de coleta horizontal, o coletor foi projetado com um escalonador de páginas para coleta. O escalonador define a próxima URL a ser coletada levando em consideração a profundidade das URLs e a penalidade de seus domínios no momento que as URLs são observadas, de forma que, quanto menos profunda a URL e menos links para um domínio a fila possui, maior a prioridade da URL para coleta. A profundidade é calculada contando quantas barras (o caractere '/') a URL possui, desconsiderando as barras da definição do protocolo. O objetivo é favorecer páginas que estejam mais próximas da raiz do sítio.
+\subsection{Geração das tuplas}
+A indexação continua iterando sobre os termos indexáveis de cada página (documento) e armazenando tuplas de códigos que referenciam o termo, o documento, a frequência daquele termo no documento e as posições onde aparece. Para limitar o uso de memória, pré-determinamos o número de tuplas de termos que podem ser armazenadas em memória principal. Quando essa quantidade é atingida, o conjunto de tuplas é ordenado e armazenado em memória secundária. Este limite é calculado considerando que a tupla ocupa 212B, que é o quanto um termo que aparece em 50 posições de um documento ocuparia em memória.
 
-Como o objetivo é construir um coletor da Web brasileira, as URLs foram filtradas para que somente fossem coletadas páginas do domínio ``.br", com exceção de páginas brasileiras conhecidas que não estão no domínio, como \textit{globo.com}, \textit{r7.com}, \textit{ingresso.com} e \textit{amocinema.com}. Outras URLs também eram excluídas da coleta, como encurtadores de link, botões de compartilhamento de rede social, URLs construídas em tempo de execução do site através de \textit{templates} Javascript, e URLs para validadores CSS.
+\subsection{Ordenação externa}
+Os arquivos de tuplas ordenadas são mesclados através do algoritmo heapsort multi-way, respeitando o limite do número de tuplas estabelecido. O algoritmo é executado até que sobre um arquivo somente, com todas as tuplas da coleção. Este arquivo, somado dos arquivos que relacionam termos e URLs de páginas com seus respectivos códigos, forma o índice de documentos invertido. A mesclagem dos arquivos não é feita in-place, o que significa que a mesclagem de um arquivo A com o arquivo B gera um terceiro arquivo C com o conteúdo de A e B.
 
-Alguns processamentos são feitos nas URLs antes de serem adicionadas ao escalonador, como transformação de todas as letras para minúsculo, remoção de barras extras no trecho de definição de protocolo, remoção de espaços e final da URL quando indica raiz de uma pasta ('/', '/index.html', '/index.php', etc). Se, mesmo com essas correções, ainda não for possível extrair domínio e subdomínio da URL, ela não é considerada.
+\section{O Buscador}
+Como parte da tarefa, um buscador que utilizasse o índice gerado deveria ser implementado. A busca recuperava a lista de documentos que cada um dos termos da consulta aparecia e retornava a interseção entre todas as listas. A interseção era calculada ordenando as listas pelo tamanho delas. A menor lista era tomada como referência e a presença de seus elementos nas outras listas era verificada, de forma que somente eram retornados documentos que apareciam nas listas de todos os termos da busca.
 
-A preservação dos servidores é garantida no escalonador, que verifica se o último acesso ao domínio da página mais indicada para ser coletada foi muito recente, menos de 30 segundos atrás. Se for o caso, a penalidade do domínio é atualizada e a busca por uma página adequada continua. Quando a busca termina, as páginas extraídas do escalonador que não puderam ser coletadas são inseridas novamente com penalidades atualizadas.
+\section{Análise de complexidade}
+\subsection{Tempo}
+As tarefas que mais demandam tempo na indexação é a geração de termos indexáveis e a ordenação externa. A primeira gera uma árvore sintática que é usada para navegar pelo documento em busca dos termos. Considerando que a construção é feita em tempo linear, a extração de termos é feita em $O(C)$, em que $L$ é o tamanho do documento em número de caracteres. A segunda tarefa executa um heapsort multi-way que tem ordem de complexidade $O(T log_{W} T)$, em que $T$ indica o número de tuplas a serem ordenadas e $W$ o número de tuplas que vão para a memória principal.
 
-Para garantir melhor desempenho do escalonador, sua implementação foi feita usando a estrutura de dados Min-max heap, que permite saber, em tempo constante, o menor e o maior elemento da fila, enquanto remoções e inserções são feitas em tempo logarítmico no número de entradas. Essa funcionalidade é importante por permitir a definição rápida não só da próxima página a ser coletada mas também qual página deve sair da fila de prioridades para dar lugar a uma nova, caso a fila exceda seus limites de espaço.
-
-A coleta das páginas é feita de forma concorrente, disparando \textit{threads} que requerem páginas do escalonador e as coletam enquanto o número de páginas coletadas for inferior ao requerido. O conteúdo das páginas é agregado em um \textit{buffer} antes de ser salvo em disco. 
-
-\paragraph{\textbf{ANÁLISE DE COMPLEXIDADE}} As duas operações principais do coletor são a inserção de URL nova no escalonador e a escolha da próxima a ser coletada. O tamanho do endereço da página é desconsiderado na análise de complexidade por ser muito menor que o número de páginas no escalonador, indicado nas análises posteriores como $N$.
-
-A inserção de nova página formata a URL, verifica em uma tabela hash se já foi adicionada anteriormente, verifica em outra tabela hash as informações de acesso ao domínio da página, atualiza esses valores e adiciona a página ao escalonador. Todas as operações são $O(1)$, com exceção da última que é logarítimica no número de elementos do escalonador. A inserção tem, portanto, complexidade de tempo $O(\log N)$. 
-
-A escolha da próxima página a ser coletada remove páginas do topo da heap enquanto não encontra uma que possa ser coletada. No caso médio, a escolha tem custo $O(\log N)$. No pior caso, entretanto, o escalonador remove todas as páginas da heap para depois adicioná-las novamente, o que tem custo $O(N * \log N)$.
-
-Com relação a análise de complexidade de espaço, o coletor projetado tem complexidade $O(N) + O(C)$, sendo $C$ o número de páginas já vistas. Além do heap do escalonador, são armazenadas todos os endereços de páginas já vistas em uma tabela hash, assim como informações sobre seus domínios.
+\subsection{Espaço}
+Os módulos mais custosos em espaço são o vocabulário e as tuplas armazenadas em memória principal. O vocabulário ocupa espaço $O(V)$, em que $V$ indica o tamanho do vocabulário. Uma tupla armazena também as posições onde aparece no documento. Por isso, a complexidade média de espaço é da ordem $O(P)$, onde $P$ indica a frequência média de termos em documentos da coleção.
 
 \section{Experimentos}
-Idealmente, o coletor deve progredir de forma constante e seu desempenho não deve cair ao aumentar o número de páginas disponíveis no escalonador. A quantidade de \textit{threads} disparadas deve ser adequada para o ambiente de execução, não causando \textit{thrashing} do sistema durante a execução. 
-
-Para verificar esses pontos para o coletor projetado, foram realizados alguns experimentos com velocidade de coleta, banda utilizada e número adequado de \textit{threads}. Os testes foram realizados em um computador disponível no CRC, cujas configurações são:
+Para avaliar o desempenho do indexador implementado, foram realizados testes para analisar a resposta quando variamos o número de tuplas disponíveis em memória principal e o número de documentos para indexar. Foi usada uma coleção de 5GB, com 8608 termos e 21924 documentos, segundo o índice gerado pelo indexador. A coleção corresponde aos 10 primeiros documentos da coleção completa disponibilizada em sala. O computador utilizado para os experimentos foi:
 \begin{itemize}
-	\item Intel Core 2 Duo E7500 @ 2.93GHz
-	\item 4GB de RAM
-	\item Ubuntu 14.04.5 LTS
-	\item Velocidade da internet durante teste:
-		\begin{itemize}
-			\item Download: 3.45 Mbit/s
-			\item Upload: 3.20 Mbit/s
-		\end{itemize}
+  \item 1.4 GHz Intel Core i5
+  \item 4 GB 1600 MHz DDR3
+  \item OS X El Capitan
+  \item SSD 128GB
 \end{itemize}
 
-Informações sobre velocidade de escrita no disco não foram recuperadas. Porém, como a escrita das páginas em disco é feita somente quando 300 páginas são coletadas, a velocidade de escrita não atrapalhará tanto o desempenho do coletor.
+\subsection{Tamanho da coleção}
+Fixando o tamanho da memória disponível em 200 megabytes, o tamanho da coleção foi variado em 2,5GB e 4,5GB. O resultado de tempo de indexação pode ser observado no gráfico~\ref{fig:tamanho}. É possível validar a ideia de que quanto maior a coleção, mais tempo o indexador leva.
 
-Por causa da limitação de memória RAM, o tamanho máximo do escalonador foi fixado em 1 milhão. Quando o tamanho era excedido, a página com menor preferência era descartada para dar lugar à nova. 
+\begin{figure}
+  \caption{Tempo de indexação em função do tamanho da coleção}
+  \label{fig:tamanho}
+  \centering
+    \includegraphics[width=0.6\textwidth]{tamanho}
+\end{figure}
 
-\paragraph{\textbf{\textit{THREADS}}} O desempenho do coletor foi testado com 20, 50, 80, 110 e 130 \textit{threads}, fixando o número de páginas coletadas em 5 mil. O resultado pode ser observado na Figura \ref{fig:threads}, que indica que o desempenho foi máximo com 110 \textit{threads}. Com 130, houve perda de velocidade de coleta possivelmente ocasionada por \textit{thrashing} do sistema ou uso da banda além do adequado.
+\subsection{Tuplas}
+Foi passada a memória disponível como parâmetro variando entre 20, 40, 60, 80 e 100 megabytes. O tamanho da coleção foi fixado em 2,5GB. O resultado, porém, contradiz a análise de complexidade, pois o tempo de indexação não responde às variações de tamanho da memória disponível. Isso ocorre, provavelmente, porque o controle de memória não é estrito, o que permite que se use a mesma quantidade de memória nas cinco execuções. O resultado pode ser observado no gráfico~\ref{fig:memoria}.
 
-\paragraph{\textbf{TEMPO}} O número de \textit{threads} foi fixado em 110, já que o experimento anterior indicou que essa era uma boa quantidade para o ambiente de execução, e o número de páginas a serem coletadas em 1 milhão. O objetivo do experimento é verificar se o desempenho do coletor cai quando o número de páginas coletadas cresce. O coletor demorou 5 horas e 17 minutos. A Figura \ref{fig:tempo} mostra que o progresso da coleta foi constante.
-
-\paragraph{\textbf{BANDA}} O experimento de banda gasta registrou quantos bytes de páginas foram salvos em cada segundo e determinou que, para aquele instante, a banda média é a média de bytes salvos nos 20 segundos anteriores. A Figura \ref{fig:banda} apresenta a variação de banda utilizada no decorrer da coleta.
-
-\paragraph{\textbf{QUALIDADE}} A análise de qualidade da coleta visa confirmar o comportamento esperado de coleta horizontal, que deve priorizar a variedade 
-de domínios no lugar de coletar diversas páginas de um somente. Os domínios atingidos pelo coletor quando coletadas 1 milhão de páginas somaram 153 mil. O número de páginas coletadas por domínio variou de 1 a 14 páginas, com mediana 7 e média 6,5. A distribuição pode ser melhor visualizada na Figura \ref{fig:distribuicao}.
-
-A busca não foi extremamente horizontal, visto que o coletor visitou um grupo de páginas da maior parte dos domínios. Mas, considerando que o grupo foi pequeno e que as informações de páginas de dentro de um mesmo domínio são importantes, considero que a implementação do coletor foi correta.
+\begin{figure}
+  \caption{Tempo de indexação em função da memória principal}
+  \label{fig:memoria}
+  \centering
+    \includegraphics[width=0.6\textwidth]{memoria}
+\end{figure}
 
 \section{Melhorias}
-Muitas URLs encontradas eram malformadas, o que quebrou a execução do coletor diversas vezes na etapa de implementação. Algumas ações foram feitas para que as URLs fossem corrigidas, porém, os erros são muito imprevisíveis. O ideal é, portanto, que fosse feita uma validação da URL através de expressões regulares, por exemplo, antes de ser adicionada ao coletor, descartando as malformadas.
+Para o uso do indexador implementado em situações reais, deveria haver remoção de acentos nos termos da coleção. Isso diminuiria a quantidade de termos indexados e melhoraria a qualidade das recuperações com o índice. 
 
-Os parâmetros passados ao coletor permitem que o usuário regule o consumo de banda indiretamente ao diminuir o número de \textit{threads} disparadas. Porém, é necessária experimentação. Uma melhoria possível seria adaptar o ritmo da coleta às necessidades ou limitações do ambiente do usuário, fornecendo o gasto de banda máximo como parâmetro.
-
-\begin{figure}
-  \caption{Velocidade de coleta com diferentes números de \textit{threads}}
-  \label{fig:threads}
-  \centering
-    \includegraphics[width=1\textwidth]{threads}
-\end{figure}
-
-\begin{figure}
-  \caption{Progresso da coleta em função do tempo}
-  \label{fig:tempo}
-  \centering
-    \includegraphics[width=1\textwidth]{tempo}
-\end{figure}
-
-\begin{figure}
-  \caption{Largura de banda média utilizada durante a coleta}
-  \label{fig:banda}
-  \centering
-    \includegraphics[width=1\textwidth]{banda}
-\end{figure}
-
-
-\begin{figure}
-  \caption{Distribuição de páginas coletadas por domínio}
-  \label{fig:distribuicao}
-  \centering
-    \includegraphics[width=1\textwidth]{por-dominio}
-\end{figure}
-
+O controle de memória pecou, por não ter sido feito de forma estrita e sim com estimativas de consumo de memória por tupla. Isso resultou em usos descontrolados de memória o que impede o uso do indexador para coleções realmente grandes.
 
 %%% End document
 \end{document}
