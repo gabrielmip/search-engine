@@ -132,13 +132,12 @@ void Indexer::addTuple (uint term, uint doc, vector<uint> pos) {
 
 void Indexer::dumpTuples () {
     memoryUsed = 0;
+    pair<uint, uint> p;
 
     // sorted run
     sort(cachedTuples.begin(), cachedTuples.end(), tupleSorter());
     string filename = runfolder + "/" + to_string(runCount) + ".txt";
     FILE *file = fopen(filename.c_str(), "w");
-
-    // writes to file
     Tuple t;
     for (int i = 0; i < cachedTuples.size(); i++) {
         t = cachedTuples[i];
@@ -148,18 +147,24 @@ void Indexer::dumpTuples () {
         }
         fprintf(file, "%u\n", t.pos[t.pos.size()-1]);
     }
-
     fclose(file);
 
     // page rank
     sort(cachedLinks.begin(), cachedLinks.end(), linkSorter());
-    filename = runfolder + "/" + to_string(runCount) + ".txt";
+    filename = runfolder + "_pagerank/" + to_string(runCount) + ".txt";
     file = fopen(filename.c_str(), "w");
-
-    // writes to file
-    pair<uint, uint> p;
     for (int i = 0; i < cachedLinks.size(); i++) {
         p = cachedLinks[i];
+        fprintf(file, "%u,%u\n", p.first, p.second);
+    }
+    fclose(file);
+
+    // anchor text
+    sort(cachedAnchorTuples.begin(), cachedAnchorTuples.end(), linkSorter());
+    filename = runfolder + "_anchortext/" + to_string(runCount) + ".txt";
+    file = fopen(filename.c_str(), "w");
+    for (int i = 0; i < cachedAnchorTuples.size(); i++) {
+        p = cachedAnchorTuples[i];
         fprintf(file, "%u,%u\n", p.first, p.second);
     }
     fclose(file);
@@ -167,6 +172,7 @@ void Indexer::dumpTuples () {
     runCount++;
     cachedTuples.clear();
     cachedLinks.clear();
+    cachedAnchorTuples.clear();
 }
 
 // recursive function that calls itself until there is only
