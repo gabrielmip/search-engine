@@ -45,6 +45,16 @@ struct pqTupleSorter {
     }
 };
 
+// priority queue to merge page rank runs
+struct pqLinkSorter {
+    bool operator () (pair<pair<uint, uint>, int> const &a, pair<pair<uint, uint>, int> const &b) const {
+        if (a.first.first > b.first.first) return true;
+        else if (a.first.first == b.first.first) {
+            return (a.first.second > b.first.second);
+        } else return false;
+    }
+};
+
 // memory in megabytes
 Indexer::Indexer (string raw, string runs, string merge, string out, int memory, string logPath) {
     rawfolder = raw;
@@ -177,7 +187,7 @@ void Indexer::dumpTuples () {
 
 // recursive function that calls itself until there is only
 // one file on the folder passed as parameter.
-string Indexer::mergeRuns (string folder, string otherFolder) {
+void Indexer::mergeRuns (string folder, string otherFolder) {
     string primaryFolder, secondaryFolder, auxFolder;
 
     ////////////////////////////////////
@@ -188,7 +198,7 @@ string Indexer::mergeRuns (string folder, string otherFolder) {
     vector<string> runPaths = u.listdir(folder);
     vector<RunIterator> runs (runPaths.size());
     priority_queue<pair<Tuple, int>, vector<pair<Tuple, int> >, pqTupleSorter> heap;
-    uint numWays = MAX_MEM_USAGE / 100; // 100 bytes for each tuple;
+    uint numWays = MAX_MEM_USAGE / (100*sizeof(uint)); // 200 bytes for each tuple;
     primaryFolder = folder;
     secondaryFolder = otherFolder;
 
@@ -274,8 +284,102 @@ string Indexer::mergeRuns (string folder, string otherFolder) {
     }
 }
 
-void mergeAnchorTextRuns (string primary) {
-    
+
+////////////////////////////////////
+       // page rank index //
+////////////////////////////////////
+void Indexer::mergePageRankRuns (string folder, string otherFolder) {
+    string primaryFolder, secondaryFolder, auxFolder;
+
+    pair<uint, uint> tup;
+    pair<pair<uint, uint>, int> tuppair;
+    vector<string> runPaths = u.listdir(folder);
+    vector<RankRunIterator> runs (runPaths.size());
+    priority_queue<pair<pair<uint, uint>, int>, vector<pair<pair<uint, uint>, int> >, pqLinkSorter> heap;
+    uint numWays = MAX_MEM_USAGE / (2*sizeof(uint));
+    primaryFolder = folder;
+    secondaryFolder = otherFolder;
+
+    while (runPaths.size() > 1) {
+        // segments to be analysed considering numWays and runPaths.size()
+        int numSegments = runPaths.size()/numWays;
+        for (int i = 0; i <= numSegments; i++) {
+            // interval from segment being analysed
+            int lower = i * numSegments;
+            int higher = lower + 1 + numSegments;
+            if (higher >= runPaths.size()) {
+                higher = runPaths.size() - 1;
+            }
+
+            // filling heap
+            int index = lower;
+            bool pushedSomething = false;
+            while (heap.size() < numWays) {
+                if (!runs[index].isFileOver()) {
+                    tup = runs[index].nextTuple();
+                    heap.push(make_pair(tup, index));
+                    pushedSomething = true;
+                }
+                if (index+1 > higher) {
+                    if (!pushedSomething) break;
+                    index = lower;
+                    pushedSomething = false;
+                } else {
+                    index++;
+                }
+            }
+
+            // file with merged runs
+            string mergedName = secondaryFolder + '/' + to_string(i) + ".txt";
+            FILE *mergedFile = fopen(mergedName.c_str(), "w");            
+            
+            // pops heap, writes to merged run's file and pushs
+            // a tuple from the run where the popped one came from
+            while (!heap.empty()) {
+                tuppair = heap.top();
+                tup = tuppair.first;
+                index = tuppair.second;
+                heap.pop();
+
+                // writes to file (ugh)
+                // printf("i: %d,\t<%d,%d,%lu>\n", index, tup.term, tup.doc, tup.pos.size());
+                fprintf(mergedFile, "%d,%d,%lu,", tup.term, tup.doc, tup.pos.size());
+                for (uint p = 0; p < tup.pos.size()-1; p++) {
+                    fprintf(mergedFile, "%u,", tup.pos[p]);
+                }
+                fprintf(mergedFile, "%u\n", tup.pos[tup.pos.size()-1]);
+
+                // inserts a new one if possible
+                if (!runs[index].isFileOver()) {
+                    tup = runs[index].nextTuple();
+                    heap.push(make_pair(tup, index));
+                }
+            }
+            fclose(mergedFile);
+        }
+
+        // deleting original run files
+        for (int i = 0; i < runPaths.size(); i++) {
+            string name = primaryFolder + '/' + runPaths[i];
+            remove(name.c_str());
+            runs[i].close();
+        }
+
+        runPaths.clear();
+        runs.clear();
+        runPaths = u.listdir(secondaryFolder); // otherfolder
+        
+        auxFolder = primaryFolder;
+        primaryFolder = secondaryFolder;
+        secondaryFolder = auxFolder;
+    }
+
+    if (primaryFolder != folder) {
+        runPaths = u.listdir(secondaryFolder);
+        for (int i = 0; i < runPaths.size(); i++) {
+            rename((secondaryFolder +'/'+ runPaths[i]).c_str(), (primaryFolder +'/'+ runPaths[i]).c_str());
+        }
+    }
 }
 
 // parses page html, getting indexable tokens and hrefs 

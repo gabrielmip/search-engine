@@ -51,7 +51,7 @@ private:
     void cacheAnchorTerm (uint dest, uint term);
     void dumpTuples ();
 
-    std::string mergeRuns (std::string folder,std::string otherFolder);
+    void mergeRuns (std::string folder,std::string otherFolder);
     void outputIndex (std::string folder);
     uint MAX_MEM_USAGE;
     uint memoryUsed;
