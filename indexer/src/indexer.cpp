@@ -523,6 +523,72 @@ void Indexer::outputIndex (string folder) {
     fclose(vocabFile);
 }
 
+void Indexer::outputPageRank (string folder) {
+    // std::map<std::string, uint> pageRankUrlCodes;
+
+    vector<string> paths = u.listdir(folder);
+    FILE *indexFile = fopen((folder + '/' + paths[0]).c_str(), "r");
+    FILE *newFile = fopen((folder + "/compressed.txt").c_str(), "w");
+    uint ori, dest, prev = -1;
+    while (fscanf(indexFile, "%u,%u\n", &ori, &dest) == 2) {
+        if (prev != ori) {
+            if (prev != -1) fprintf(newFile, "\n%u ", ori);
+            else fprintf(newFile, "%u ", ori);
+        }
+        fprintf(newFile, "%u ", dest);
+        prev = ori;
+    }
+    fclose(indexFile);
+    fclose(newFile);
+
+
+    FILE *urlFile = fopen((folder + "/urls.txt").c_str(), "w");
+    map<string, uint>::iterator it;
+    for (it = pageRankUrlCodes.begin(); it != pageRankUrlCodes.end(); it++) {
+        fprintf(urlFile, "%s %u\n", it->first.c_str(), it->second);
+    }
+    fclose(urlFile);
+}
+
+void Indexer::outputAnchorText (string folder) {
+    // std::map<std::string, uint> anchorVocabulary;
+
+    // inverted vocabulary index
+    map<uint, string> inverted;
+    map<string, uint>::iterator it;
+    for (it = anchorVocabulary.begin(); it != anchorVocabulary.end(); it++) {
+        inverted[it->second] = it->first;
+    }
+
+    // write index and vocabulary
+    vector<string> paths = u.listdir(folder);
+    FILE *indexFile = fopen((folder + '/' + paths[0]).c_str(), "r");
+    FILE *newFile = fopen((folder + "/compressed.txt").c_str(), "w");
+    FILE *vocFile = fopen((folder + "/vocabulary.txt").c_str(), "w");
+    
+    uint ori, dest, prev = -1;
+    string term;
+    long long unsigned int pos = 0;
+    while (fscanf(indexFile, "%u,%u\n", &ori, &dest) == 2) {
+        if (prev != ori) {
+            if (prev != -1) {
+                fprintf(vocFile, "%s %u %llu\n", inverted[ori].c_str(), ori, pos+1);
+                pos += fprintf(newFile, "\n%u ", ori);
+            }
+            else {
+                fprintf(vocFile, "%s %u %llu\n", inverted[ori].c_str(), ori, pos);
+                pos += fprintf(newFile, "%u ", ori);
+            }
+        }
+        pos += fprintf(newFile, "%u ", dest);
+        prev = ori;
+    }
+
+    fclose(indexFile);
+    fclose(newFile);
+    fclose(vocFile);
+}
+
 void Indexer::run () {
     string rawpage, page, file, url;
     FileIterator it;

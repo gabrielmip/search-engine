@@ -55,6 +55,8 @@ private:
     void mergeRuns (std::string folder,std::string otherFolder);
     void mergePageRankRuns (std::string folder,std::string otherFolder);
     void outputIndex (std::string folder);
+    void outputPageRank (std::string folder);
+    void outputAnchorText (std::string folder);
     uint MAX_MEM_USAGE;
     uint memoryUsed;
     int runCount;

@@ -14,5 +14,6 @@ class Utils {
         bool isStopWord (std::string);
     private:
         std::vector<std::string> stopWords;
+        std::map<char, char> accents;
         // std::map<char, char> accentReplacementes;
 };
