@@ -44,7 +44,7 @@ string Utils::cleanTerm (string term) {
 }
 
 bool Utils::isStopWord (string word) {
-    for (int i = 0; i < stopWords.size(); i++){
+    for (unsigned int i = 0; i < stopWords.size(); i++){
         if (stopWords[i] == word) return true;
     }
     return false;

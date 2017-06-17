@@ -75,7 +75,7 @@ vector<string> Indexer::tokenize (string page) {
     current = previous = 0;
     while (current < page.size()) {
         // iterates over separators to see if end of word was found
-        for (int i = 0; i < separators.size(); i++) {
+        for (unsigned int i = 0; i < separators.size(); i++) {
             if (page[current] == separators[i]) {
                 // word is considered if size is greater than 0, ofc
                 if (current-previous > 0) {
@@ -149,7 +149,7 @@ void Indexer::dumpTuples () {
     string filename = runfolder + "/" + to_string(runCount) + ".txt";
     FILE *file = fopen(filename.c_str(), "w");
     Tuple t;
-    for (int i = 0; i < cachedTuples.size(); i++) {
+    for (unsigned int i = 0; i < cachedTuples.size(); i++) {
         t = cachedTuples[i];
         fprintf(file, "%d,%d,%lu,", t.term, t.doc, t.pos.size());
         for (uint p = 0; p < t.pos.size()-1; p++) {
@@ -163,7 +163,7 @@ void Indexer::dumpTuples () {
     sort(cachedLinks.begin(), cachedLinks.end(), linkSorter());
     filename = runfolder + "_pagerank/" + to_string(runCount) + ".txt";
     file = fopen(filename.c_str(), "w");
-    for (int i = 0; i < cachedLinks.size(); i++) {
+    for (unsigned int i = 0; i < cachedLinks.size(); i++) {
         p = cachedLinks[i];
         fprintf(file, "%u,%u\n", p.first, p.second);
     }
@@ -173,7 +173,7 @@ void Indexer::dumpTuples () {
     sort(cachedAnchorTuples.begin(), cachedAnchorTuples.end(), linkSorter());
     filename = runfolder + "_anchortext/" + to_string(runCount) + ".txt";
     file = fopen(filename.c_str(), "w");
-    for (int i = 0; i < cachedAnchorTuples.size(); i++) {
+    for (unsigned int i = 0; i < cachedAnchorTuples.size(); i++) {
         p = cachedAnchorTuples[i];
         fprintf(file, "%u,%u\n", p.first, p.second);
     }
@@ -204,22 +204,22 @@ void Indexer::mergeRuns (string folder, string otherFolder) {
 
     while (runPaths.size() > 1) {
         // init run iterators
-        for (int i = 0; i < runPaths.size(); i++) {
+        for (unsigned int i = 0; i < runPaths.size(); i++) {
             runs[i].loadFile(primaryFolder + '/' + runPaths[i]);
         }
         
         // segments to be analysed considering numWays and runPaths.size()
-        int numSegments = runPaths.size()/numWays;
-        for (int i = 0; i <= numSegments; i++) {
+        unsigned int numSegments = runPaths.size()/numWays;
+        for (unsigned int i = 0; i <= numSegments; i++) {
             // interval from segment being analysed
-            int lower = i * numSegments;
-            int higher = lower + 1 + numSegments;
+            unsigned int lower = i * numSegments;
+            unsigned int higher = lower + 1 + numSegments;
             if (higher >= runPaths.size()) {
                 higher = runPaths.size() - 1;
             }
 
             // filling heap
-            int index = lower;
+            unsigned int index = lower;
             bool pushedSomething = false;
             while (heap.size() < numWays) {
                 if (!runs[index].isFileOver()) {
@@ -266,7 +266,7 @@ void Indexer::mergeRuns (string folder, string otherFolder) {
         }
 
         // deleting original run files
-        for (int i = 0; i < runPaths.size(); i++) {
+        for (unsigned int i = 0; i < runPaths.size(); i++) {
             string name = primaryFolder + '/' + runPaths[i];
             remove(name.c_str());
             runs[i].close();
@@ -283,7 +283,7 @@ void Indexer::mergeRuns (string folder, string otherFolder) {
 
     if (primaryFolder != folder) {
         runPaths = u.listdir(secondaryFolder);
-        for (int i = 0; i < runPaths.size(); i++) {
+        for (unsigned int i = 0; i < runPaths.size(); i++) {
             rename((secondaryFolder +'/'+ runPaths[i]).c_str(), (primaryFolder +'/'+ runPaths[i]).c_str());
         }
     }
@@ -307,22 +307,22 @@ void Indexer::mergePageRankRuns (string folder, string otherFolder) {
 
     while (runPaths.size() > 1) {
         // init run iterators
-        for (int i = 0; i < runPaths.size(); i++) {
+        for (unsigned int i = 0; i < runPaths.size(); i++) {
             runs[i].loadFile(primaryFolder + '/' + runPaths[i]);
         }
         
         // segments to be analysed considering numWays and runPaths.size()
-        int numSegments = runPaths.size()/numWays;
-        for (int i = 0; i <= numSegments; i++) {
+        unsigned int numSegments = runPaths.size()/numWays;
+        for (unsigned int i = 0; i <= numSegments; i++) {
             // interval from segment being analysed
-            int lower = i * numSegments;
-            int higher = lower + 1 + numSegments;
+            unsigned int lower = i * numSegments;
+            unsigned int higher = lower + 1 + numSegments;
             if (higher >= runPaths.size()) {
                 higher = runPaths.size() - 1;
             }
 
             // filling heap
-            int index = lower;
+            unsigned int index = lower;
             bool pushedSomething = false;
             while (heap.size() < numWays) {
                 if (!runs[index].isFileOver()) {
@@ -364,7 +364,7 @@ void Indexer::mergePageRankRuns (string folder, string otherFolder) {
         }
 
         // deleting original run files
-        for (int i = 0; i < runPaths.size(); i++) {
+        for (unsigned int i = 0; i < runPaths.size(); i++) {
             string name = primaryFolder + '/' + runPaths[i];
             remove(name.c_str());
             runs[i].close();
@@ -381,7 +381,7 @@ void Indexer::mergePageRankRuns (string folder, string otherFolder) {
 
     if (primaryFolder != folder) {
         runPaths = u.listdir(secondaryFolder);
-        for (int i = 0; i < runPaths.size(); i++) {
+        for (unsigned int i = 0; i < runPaths.size(); i++) {
             rename((secondaryFolder +'/'+ runPaths[i]).c_str(), (primaryFolder +'/'+ runPaths[i]).c_str());
         }
     }
@@ -426,7 +426,7 @@ void Indexer::indexPage(string raw, string url) {
                 // anchor text
                 phrase = u.cleanTerm(it->text());
                 terms = tokenize(phrase);
-                for (int i = 0; i < terms.size(); i++) {
+                for (unsigned int i = 0; i < terms.size(); i++) {
                     if (u.isStopWord(terms[i])) continue;
                     uint termIndex = getTermCode(terms[i], anchorVocabulary);
                     cacheAnchorTerm(termIndex, dest);
@@ -449,7 +449,7 @@ void Indexer::indexPage(string raw, string url) {
             phrase = u.cleanTerm(it->text());
             terms = tokenize(phrase);
             
-            for (int i = 0; i < terms.size(); i++) {
+            for (unsigned int i = 0; i < terms.size(); i++) {
                 if (u.isStopWord(terms[i])) continue;
                 uint termIndex = getTermCode(terms[i], vocabulary);
                 appearsAt[termIndex].push_back(i);
@@ -529,11 +529,16 @@ void Indexer::outputPageRank (string folder) {
     vector<string> paths = u.listdir(folder);
     FILE *indexFile = fopen((folder + '/' + paths[0]).c_str(), "r");
     FILE *newFile = fopen((folder + "/compressed.txt").c_str(), "w");
-    uint ori, dest, prev = -1;
+    uint ori, dest, prev;
+    prev = ori = 0;
+    bool first = true;
     while (fscanf(indexFile, "%u,%u\n", &ori, &dest) == 2) {
         if (prev != ori) {
-            if (prev != -1) fprintf(newFile, "\n%u ", ori);
-            else fprintf(newFile, "%u ", ori);
+            if (first) {
+                fprintf(newFile, "%u ", ori);
+                first = false;
+            }
+            else fprintf(newFile, "\n%u ", ori);
         }
         fprintf(newFile, "%u ", dest);
         prev = ori;
@@ -566,16 +571,19 @@ void Indexer::outputAnchorText (string folder) {
     FILE *newFile = fopen((folder + "/compressed.txt").c_str(), "w");
     FILE *vocFile = fopen((folder + "/vocabulary.txt").c_str(), "w");
     
-    uint ori, dest, prev = -1;
+    uint ori, dest, prev;
+    prev = ori = 0;
+    bool first = true;
     string term;
     long long unsigned int pos = 0;
     while (fscanf(indexFile, "%u,%u\n", &ori, &dest) == 2) {
         if (prev != ori) {
-            if (prev != -1) {
+            if (!first) {
                 fprintf(vocFile, "%s %u %llu\n", inverted[ori].c_str(), ori, pos+1);
                 pos += fprintf(newFile, "\n%u ", ori);
             }
             else {
+                first = false;
                 fprintf(vocFile, "%s %u %llu\n", inverted[ori].c_str(), ori, pos);
                 pos += fprintf(newFile, "%u ", ori);
             }
