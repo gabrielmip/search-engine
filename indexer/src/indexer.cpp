@@ -203,6 +203,11 @@ void Indexer::mergeRuns (string folder, string otherFolder) {
     secondaryFolder = otherFolder;
 
     while (runPaths.size() > 1) {
+        // init run iterators
+        for (int i = 0; i < runPaths.size(); i++) {
+            runs[i].loadFile(primaryFolder + '/' + runPaths[i]);
+        }
+        
         // segments to be analysed considering numWays and runPaths.size()
         int numSegments = runPaths.size()/numWays;
         for (int i = 0; i <= numSegments; i++) {
@@ -301,6 +306,11 @@ void Indexer::mergePageRankRuns (string folder, string otherFolder) {
     secondaryFolder = otherFolder;
 
     while (runPaths.size() > 1) {
+        // init run iterators
+        for (int i = 0; i < runPaths.size(); i++) {
+            runs[i].loadFile(primaryFolder + '/' + runPaths[i]);
+        }
+        
         // segments to be analysed considering numWays and runPaths.size()
         int numSegments = runPaths.size()/numWays;
         for (int i = 0; i <= numSegments; i++) {
@@ -341,13 +351,8 @@ void Indexer::mergePageRankRuns (string folder, string otherFolder) {
                 index = tuppair.second;
                 heap.pop();
 
-                // writes to file (ugh)
-                // printf("i: %d,\t<%d,%d,%lu>\n", index, tup.term, tup.doc, tup.pos.size());
-                fprintf(mergedFile, "%d,%d,%lu,", tup.term, tup.doc, tup.pos.size());
-                for (uint p = 0; p < tup.pos.size()-1; p++) {
-                    fprintf(mergedFile, "%u,", tup.pos[p]);
-                }
-                fprintf(mergedFile, "%u\n", tup.pos[tup.pos.size()-1]);
+                // writes to file
+                fprintf(mergedFile, "%u,%u\n", tup.first, tup.second);
 
                 // inserts a new one if possible
                 if (!runs[index].isFileOver()) {
@@ -549,10 +554,10 @@ void Indexer::run () {
 
     // merges them
     log(pageIndexed, 1);
-    string finalFolder = mergeRuns(runfolder, mergefolder);
+    mergeRuns(runfolder, mergefolder);
     log(pageIndexed, 1);
-
-    outputIndex(finalFolder);
+    
+    outputIndex(runfolder);
     fclose(logFile);
 }
 

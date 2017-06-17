@@ -11,6 +11,7 @@
 #include "utils.hpp"
 #include "file_iterator.hpp"
 #include "run_iterator.hpp"
+#include "rank_run_iterator.hpp"
 
 typedef unsigned int uint;
 
@@ -52,6 +53,7 @@ private:
     void dumpTuples ();
 
     void mergeRuns (std::string folder,std::string otherFolder);
+    void mergePageRankRuns (std::string folder,std::string otherFolder);
     void outputIndex (std::string folder);
     uint MAX_MEM_USAGE;
     uint memoryUsed;

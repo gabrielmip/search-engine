@@ -9,9 +9,9 @@ build: indexer search
 search:
 	g++ $(SRC_DIR)/search.cpp $(FLAGS) -o search
 
-indexer: utils file_iterator run_iterator
+indexer: utils file_iterator run_iterator rank_run_iterator
 	g++ -c $(SRC_DIR)/indexer.cpp $(FLAGS) -o $(OBJ_DIR)/indexer.o
-	g++ $(OBJ_DIR)/indexer.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/file_iterator.o $(OBJ_DIR)/run_iterator.o $(FLAGS) -o indexer
+	g++ $(OBJ_DIR)/indexer.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/file_iterator.o $(OBJ_DIR)/run_iterator.o $(OBJ_DIR)/rank_run_iterator.o $(FLAGS) -o indexer
 
 utils:
 	g++ -c $(SRC_DIR)/utils.cpp $(FLAGS) -o $(OBJ_DIR)/utils.o
@@ -21,6 +21,9 @@ file_iterator:
 
 run_iterator:
 	g++ -c $(SRC_DIR)/run_iterator.cpp $(FLAGS) -o $(OBJ_DIR)/run_iterator.o
+
+rank_run_iterator:
+	g++ -c $(SRC_DIR)/rank_run_iterator.cpp $(FLAGS) -o $(OBJ_DIR)/rank_run_iterator.o
 
 prep:
 	clear
