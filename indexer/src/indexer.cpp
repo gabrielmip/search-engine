@@ -529,7 +529,6 @@ void Indexer::run () {
     uint pageIndexed = 0;
 
     // iterates over all raw html files
-    log(pageIndexed, 0);
     for (string file : rawfiles) {
         it.loadFile(rawfolder + '/' + file);
         while (!it.isFileOver()) {
@@ -538,7 +537,7 @@ void Indexer::run () {
             if (url.size() > 0 and rawpage.size() > 0){
                 indexPage(rawpage, url);
                 if ((++pageIndexed % 10000) == 0) {
-                    log(pageIndexed, 0);
+
                 }
             }
         }
@@ -547,16 +546,12 @@ void Indexer::run () {
     if (cachedTuples.size() > 0) {
         dumpTuples();
     }
-    log(pageIndexed, 0);
-
-    // end of iteration over raw html files
-    // log(pageIndexed);
 
     // merges them
-    log(pageIndexed, 1);
     mergeRuns(runfolder, mergefolder);
-    log(pageIndexed, 1);
-    
+    mergePageRankRuns(runfolder+"_pagerank", mergefolder);
+    mergePageRankRuns(runfolder+"_anchortext", mergefolder);
+
     outputIndex(runfolder);
     fclose(logFile);
 }

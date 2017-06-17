@@ -28,10 +28,14 @@ rank_run_iterator:
 prep:
 	clear
 	mkdir -p $(OBJ_DIR)
-	rm -R data/runs
+	if [[ -d data/runs ]]; then rm -R data/runs; fi;
+	if [[ -d data/runs_pagerank ]]; then rm -R data/runs_pagerank; fi;
+	if [[ -d data/runs_anchortext ]]; then rm -R data/runs_anchortext; fi;
 	rm -R data/merge
 	mkdir -p data/docs
 	mkdir -p data/runs
+	mkdir -p data/runs_pagerank
+	mkdir -p data/runs_anchortext
 	mkdir -p data/merge
 	mkdir -p data/index
 	mkdir -p logs
