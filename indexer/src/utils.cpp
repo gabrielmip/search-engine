@@ -3,7 +3,7 @@
 using namespace std;
 
 Utils::Utils () {
-    FILE *file = fopen("stopwords.txt", "r");
+    FILE *file = fopen("src/stopwords.txt", "r");
     char word [80];
     while (fscanf(file, "%s\n", word) == 1){
         stopWords.push_back(word);

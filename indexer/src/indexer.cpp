@@ -63,6 +63,7 @@ Indexer::Indexer (string raw, string runs, string merge, string out, int memory,
     outpath = out;
     rawfiles = u.listdir(raw);
     MAX_MEM_USAGE = memory; // bytes
+    memoryUsed = 0;
     runCount = 0;
     logFile = fopen(logPath.c_str(), "a");
 }
@@ -610,8 +611,8 @@ void Indexer::run () {
             url = it.getUrl();
             if (url.size() > 0 and rawpage.size() > 0){
                 indexPage(rawpage, url);
-                if ((++pageIndexed % 10000) == 0) {
-
+                if ((++pageIndexed % 100) == 0) {
+                    cout << "Indexing page " << pageIndexed << "..." << endl;
                 }
             }
         }
@@ -622,12 +623,14 @@ void Indexer::run () {
     }
 
     // merges them
+    cout << "Merge standard index..." << endl;
     mergeRuns(runfolder, mergefolder);
+    cout << "Merge page rank info..." << endl;
     mergePageRankRuns(runfolder+"_pagerank", mergefolder);
+    cout << "Merge anchor text info..." << endl;
     mergePageRankRuns(runfolder+"_anchortext", mergefolder);
 
     outputIndex(runfolder);
-    fclose(logFile);
 }
 
 void Indexer::log (uint indexed, int type) {
@@ -650,6 +653,8 @@ int main (int argc, char **argv) {
     string logPath = argv[6];
 
     Utils u;
+    cout << "Initializing..." << endl;
     Indexer indexer (docsFolder, runsFolder, mergeFolder, outputPath, memory, logPath);
+    cout << "Run..." << endl;
     indexer.run();
 }
