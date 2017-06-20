@@ -35,15 +35,15 @@ string FileIterator::nextPage () {
             newPage += c;
         }
     }
+
     return newPage;
 }
 
 void FileIterator::loadFile (string path) {
-    char c;
-    
     if (file != NULL)
         fclose(file);
 
+    char c;
     file = fopen(path.c_str(), "r");
     if (file == NULL) {
         cerr << "Error trying to open file " << path << '.' << endl;

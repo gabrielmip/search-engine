@@ -28,7 +28,6 @@ private:
     std::string outpath;
     std::vector<std::string> rawfiles;
     Utils u;
-    std::string cleanHtml (std::string raw);
     void indexPage (std::string raw, std::string url);
     
     // tuples
@@ -37,14 +36,14 @@ private:
     std::vector<std::pair<uint, uint> > cachedLinks;
     
     // url codes
-    std::map<std::string, uint> urlCodes;
-    std::map<std::string, uint> pageRankUrlCodes;
-    uint getUrlCode (std::string url, std::map<std::string, uint> m);
+    std::unordered_map<std::string, uint> urlCodes;
+    std::unordered_map<std::string, uint> pageRankUrlCodes;
+    uint getUrlCode (std::string url, std::unordered_map<std::string, uint> &m);
 
     // vocab
-    std::map<std::string, uint> vocabulary;
-    std::map<std::string, uint> anchorVocabulary;
-    uint getTermCode (std::string term, std::map<std::string, uint> m);
+    std::unordered_map<std::string, uint> vocabulary;
+    std::unordered_map<std::string, uint> anchorVocabulary;
+    uint getTermCode (std::string term, std::unordered_map<std::string, uint> &m);
     
     // manage cache
     void addTuple (uint term, uint doc, std::vector<uint> pos);

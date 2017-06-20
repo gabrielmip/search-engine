@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.tcc": "cpp",
+        "hashtable": "cpp",
+        "unordered_map": "cpp",
+        "ostream": "cpp"
+    }
+}

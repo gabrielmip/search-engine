@@ -89,24 +89,23 @@ vector<string> Indexer::tokenize (string page) {
         }
         current++;
     }
+    if (previous < current) {
+        token = page.substr(previous, current-previous);
+        tokens.push_back(token);        
+    }
     return tokens;
 }
 
-string Indexer::cleanHtml (string raw) {
-    string text = "";
-    return text;
-}
-
-uint Indexer::getUrlCode (string url, map<string, uint> m) {
-    map<string, uint>::iterator it = m.find(url);    
-    if (it == urlCodes.end()) { // url wasnt found
-        urlCodes[url] = urlCodes.size();
+uint Indexer::getUrlCode (string url, unordered_map<string, uint> &m) {
+    unordered_map<string, uint>::iterator it = m.find(url);    
+    if (it == m.end()) { // url wasnt found
+        m[url] = m.size();
     }
-    return urlCodes[url];
+    return m[url];
 }
 
-uint Indexer::getTermCode (string term, map<string, uint> m) {
-    map<string, uint>::iterator it = m.find(term);
+uint Indexer::getTermCode (string term, unordered_map<string, uint> &m) {
+    unordered_map<string, uint>::iterator it = m.find(term);
     if (it == m.end()) { // term wasnt found
         m[term] = m.size();
     }
@@ -174,6 +173,7 @@ void Indexer::dumpTuples () {
     sort(cachedAnchorTuples.begin(), cachedAnchorTuples.end(), linkSorter());
     filename = runfolder + "_anchortext/" + to_string(runCount) + ".txt";
     file = fopen(filename.c_str(), "w");
+
     for (unsigned int i = 0; i < cachedAnchorTuples.size(); i++) {
         p = cachedAnchorTuples[i];
         fprintf(file, "%u,%u\n", p.first, p.second);
@@ -392,11 +392,11 @@ void Indexer::mergePageRankRuns (string folder, string otherFolder) {
 // for pagerank calculation and anchor text indexing
 void Indexer::indexPage(string raw, string url) {
     uint docIndex = getUrlCode(url, urlCodes);
-    uint docIndexPageRank = getUrlCode(url, pageRankUrlCodes);
     uint dest;
     pair<bool, string> attr;
     map<string, string> attrs;
-    map<uint, vector<uint> > appearsAt;
+    
+    unordered_map<uint, vector<uint> > appearsAt;
     string phrase;
     Tuple a;
     
@@ -404,38 +404,15 @@ void Indexer::indexPage(string raw, string url) {
     tree<htmlcxx::HTML::Node> dom = parser.parseTree(raw);
     tree<htmlcxx::HTML::Node>::iterator it = dom.begin();
     vector<string> terms;
+    string tagName, anchorText;
+    uint docIndexPageRank;
 
     // navigates through page's parsing tree
     for (; it != dom.end(); ++it) {
         if (it.node != 0 && dom.parent(it) != NULL){
-            string tagName = dom.parent(it)->tagName();
+            tagName = dom.parent(it)->tagName();
             transform(tagName.begin(), tagName.end(), tagName.begin(), ::tolower);
-
-            // anchor text and links for pagerank calculation
-            if (tagName == "a") {
-                it->parseAttributes();
-                attrs = it->attributes();
-                
-                // if there isnt href attribute on <a>
-                if (attrs["href"].size() == 0)
-                    continue;
-                
-                // page rank
-                dest = getUrlCode(attrs["href"], pageRankUrlCodes);
-                cacheLink(docIndexPageRank, dest);
-                
-                // anchor text
-                phrase = u.cleanTerm(it->text());
-                terms = tokenize(phrase);
-                for (unsigned int i = 0; i < terms.size(); i++) {
-                    if (u.isStopWord(terms[i])) continue;
-                    uint termIndex = getTermCode(terms[i], anchorVocabulary);
-                    cacheAnchorTerm(termIndex, dest);
-                }
-
-                continue;
-            }
-
+            
             // Skipping code embedded in html
             if ((tagName == "script") ||
                 (tagName == "noscript") ||
@@ -445,11 +422,45 @@ void Indexer::indexPage(string raw, string url) {
                 continue;
             }
         }
+        
+        tagName = it->tagName();
+        if (tagName == "a" or tagName == "A") {
+            it->parseAttributes();
+            attr = it->attribute("href");
 
-        if ((!it->isTag()) && (!it->isComment())) {
+            // if there isnt href attribute on <a>
+            if (!attr.first or attr.second.size() == 0) {
+                continue;
+            }
+            
+            anchorText = "";
+            int children = it.number_of_children();
+            for (int i = 0; i < children; i++) {
+                it++;
+                if (it == dom.end()) break;
+                if (!it->isTag()) {
+                    anchorText += it->text();
+                }
+            }
+
+            // page rank
+            docIndexPageRank = getUrlCode(url, pageRankUrlCodes);
+            dest = getUrlCode(attr.second, pageRankUrlCodes);
+            cacheLink(docIndexPageRank, dest);
+            // cout << "pgrank: " << docIndexPageRank << '.' << dest << endl;
+
+            // index anchor terms
+            terms = tokenize(anchorText);
+            for (unsigned int i = 0; i < terms.size(); i++) {
+                if (u.isStopWord(terms[i])) continue;
+                uint termIndex = getTermCode(terms[i], anchorVocabulary);
+                cacheAnchorTerm(termIndex, dest);
+            }
+            
+        }  else if ((!it->isTag()) && (!it->isComment())) {
+            // do the standard indexing with textual terms from doc
             phrase = u.cleanTerm(it->text());
             terms = tokenize(phrase);
-            
             for (unsigned int i = 0; i < terms.size(); i++) {
                 if (u.isStopWord(terms[i])) continue;
                 uint termIndex = getTermCode(terms[i], vocabulary);
@@ -459,7 +470,7 @@ void Indexer::indexPage(string raw, string url) {
     }
 
     // store tuples
-    map<uint, vector<uint> >::iterator mt;
+    unordered_map<uint, vector<uint> >::iterator mt;
     for (mt = appearsAt.begin(); mt != appearsAt.end(); mt++) {
         uint termIndex = mt->first;
         vector<uint> positions = mt->second;
@@ -482,9 +493,9 @@ void Indexer::outputIndex (string folder) {
     // moving index to output folder
     rename(oldPath.c_str(), newPath.c_str());
 
-    // creating inverse vocabulary hash map
-    map<uint, string> invVocab;
-    map<string, uint>::iterator it;
+    // creating inverse vocabulary hash unordered_map
+    unordered_map<uint, string> invVocab;
+    unordered_map<string, uint>::iterator it;
     for (it = vocabulary.begin(); it != vocabulary.end(); it++) {
         invVocab[it->second] = it->first;
     }
@@ -514,7 +525,7 @@ void Indexer::outputIndex (string folder) {
 
     // storing urls
     FILE *urlsFile = fopen(urlsPath.c_str(), "w");
-    map<string, uint>::iterator urlit;
+    unordered_map<string, uint>::iterator urlit;
     for (urlit = urlCodes.begin(); urlit != urlCodes.end(); urlit++) {
         fprintf(urlsFile, "%u,%s\n", urlit->second, urlit->first.c_str());
     }
@@ -525,7 +536,7 @@ void Indexer::outputIndex (string folder) {
 }
 
 void Indexer::outputPageRank (string folder) {
-    // std::map<std::string, uint> pageRankUrlCodes;
+    // std::unordered_map<std::string, uint> pageRankUrlCodes;
 
     vector<string> paths = u.listdir(folder);
     FILE *indexFile = fopen((folder + '/' + paths[0]).c_str(), "r");
@@ -549,7 +560,7 @@ void Indexer::outputPageRank (string folder) {
 
 
     FILE *urlFile = fopen((folder + "/urls.txt").c_str(), "w");
-    map<string, uint>::iterator it;
+    unordered_map<string, uint>::iterator it;
     for (it = pageRankUrlCodes.begin(); it != pageRankUrlCodes.end(); it++) {
         fprintf(urlFile, "%s %u\n", it->first.c_str(), it->second);
     }
@@ -557,11 +568,11 @@ void Indexer::outputPageRank (string folder) {
 }
 
 void Indexer::outputAnchorText (string folder) {
-    // std::map<std::string, uint> anchorVocabulary;
+    // std::unordered_map<std::string, uint> anchorVocabulary;
 
     // inverted vocabulary index
-    map<uint, string> inverted;
-    map<string, uint>::iterator it;
+    unordered_map<uint, string> inverted;
+    unordered_map<string, uint>::iterator it;
     for (it = anchorVocabulary.begin(); it != anchorVocabulary.end(); it++) {
         inverted[it->second] = it->first;
     }
@@ -606,14 +617,12 @@ void Indexer::run () {
     // iterates over all raw html files
     for (string file : rawfiles) {
         it.loadFile(rawfolder + '/' + file);
+        cout << "Indexing file " << ++pageIndexed << "..." << endl;
         while (!it.isFileOver()) {
             rawpage = it.nextPage();
             url = it.getUrl();
             if (url.size() > 0 and rawpage.size() > 0){
                 indexPage(rawpage, url);
-                if ((++pageIndexed % 100) == 0) {
-                    cout << "Indexing page " << pageIndexed << "..." << endl;
-                }
             }
         }
     }
@@ -623,14 +632,16 @@ void Indexer::run () {
     }
 
     // merges them
-    cout << "Merge standard index..." << endl;
-    mergeRuns(runfolder, mergefolder);
-    cout << "Merge page rank info..." << endl;
-    mergePageRankRuns(runfolder+"_pagerank", mergefolder);
-    cout << "Merge anchor text info..." << endl;
-    mergePageRankRuns(runfolder+"_anchortext", mergefolder);
+    // cout << "Merge standard index..." << endl;
+    // mergeRuns(runfolder, mergefolder);
+    // cout << "Merge page rank info..." << endl;
+    // mergePageRankRuns(runfolder+"_pagerank", mergefolder);
+    // cout << "Merge anchor text info..." << endl;
+    // mergePageRankRuns(runfolder+"_anchortext", mergefolder);
 
-    outputIndex(runfolder);
+    // outputIndex(runfolder);
+    // outputPageRank(runfolder+"_pagerank");
+    // outputAnchorText(runfolder+"_anchortext");
 }
 
 void Indexer::log (uint indexed, int type) {

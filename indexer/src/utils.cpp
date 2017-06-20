@@ -6,7 +6,7 @@ Utils::Utils () {
     FILE *file = fopen("src/stopwords.txt", "r");
     char word [80];
     while (fscanf(file, "%s\n", word) == 1){
-        stopWords.push_back(word);
+        stopWords.insert(word);
     }
     fclose(file);
 }
@@ -44,9 +44,8 @@ string Utils::cleanTerm (string term) {
 }
 
 bool Utils::isStopWord (string word) {
-    for (unsigned int i = 0; i < stopWords.size(); i++){
-        if (stopWords[i] == word) return true;
-    }
-    return false;
+    unordered_set<string>::iterator it = stopWords.find(word);
+    if (it == stopWords.end()) return false;
+    else return true;
 }
 
