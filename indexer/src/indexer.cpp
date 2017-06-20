@@ -181,9 +181,9 @@ void Indexer::dumpTuples () {
     fclose(file);
     
     runCount++;
-    cachedTuples.clear();
-    cachedLinks.clear();
-    cachedAnchorTuples.clear();
+    cachedTuples.clear(); cachedTuples.shrink_to_fit();
+    cachedLinks.clear(); cachedLinks.shrink_to_fit();
+    cachedAnchorTuples.clear(); cachedAnchorTuples.shrink_to_fit();
     cout << "Leave Dump Function" << endl;
 }
 
