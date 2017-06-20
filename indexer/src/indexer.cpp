@@ -141,7 +141,7 @@ void Indexer::addTuple (uint term, uint doc, vector<uint> pos) {
 }
 
 void Indexer::dumpTuples () {
-    cout << "Enter Dump Function" << endl;
+    cout << "In... ";
     memoryUsed = 0;
     pair<uint, uint> p;
 
@@ -184,7 +184,7 @@ void Indexer::dumpTuples () {
     cachedTuples.clear(); cachedTuples.shrink_to_fit();
     cachedLinks.clear(); cachedLinks.shrink_to_fit();
     cachedAnchorTuples.clear(); cachedAnchorTuples.shrink_to_fit();
-    cout << "Leave Dump Function" << endl;
+    cout << "Out." << endl;
 }
 
 // recursive function that calls itself until there is only
@@ -284,9 +284,9 @@ void Indexer::mergeRuns (string folder, string otherFolder) {
     }
 
     if (primaryFolder != folder) {
-        runPaths = u.listdir(secondaryFolder);
+        runPaths = u.listdir(primaryFolder);
         for (unsigned int i = 0; i < runPaths.size(); i++) {
-            rename((secondaryFolder +'/'+ runPaths[i]).c_str(), (primaryFolder +'/'+ runPaths[i]).c_str());
+            rename((primaryFolder+'/'+ runPaths[i]).c_str(), (secondaryFolder +'/'+ runPaths[i]).c_str());
         }
     }
 }
@@ -382,9 +382,9 @@ void Indexer::mergePageRankRuns (string folder, string otherFolder) {
     }
 
     if (primaryFolder != folder) {
-        runPaths = u.listdir(secondaryFolder);
+        runPaths = u.listdir(primaryFolder);
         for (unsigned int i = 0; i < runPaths.size(); i++) {
-            rename((secondaryFolder +'/'+ runPaths[i]).c_str(), (primaryFolder +'/'+ runPaths[i]).c_str());
+            rename((primaryFolder +'/'+ runPaths[i]).c_str(), (secondaryFolder +'/'+ runPaths[i]).c_str());
         }
     }
 }
@@ -430,7 +430,7 @@ void Indexer::indexPage(string raw, string url) {
             attr = it->attribute("href");
 
             // if there isnt href attribute on <a>
-            if (!attr.first or attr.second.size() == 0) {
+            if (!attr.first or attr.second.size() == 0 or attr.second.find("http") != 0) {
                 continue;
             }
             
@@ -440,7 +440,7 @@ void Indexer::indexPage(string raw, string url) {
                 it++;
                 if (it == dom.end()) break;
                 if (!it->isTag()) {
-                    anchorText += it->text();
+                    anchorText += it->text() + ' ';
                 }
             }
 
@@ -450,6 +450,7 @@ void Indexer::indexPage(string raw, string url) {
             cacheLink(docIndexPageRank, dest);
 
             // index anchor terms
+            anchorText = u.cleanTerm(anchorText);
             terms = tokenize(anchorText);
             for (unsigned int i = 0; i < terms.size(); i++) {
                 if (u.isStopWord(terms[i])) continue;
@@ -518,11 +519,11 @@ void Indexer::outputIndex (string folder) {
         ss >> term;
         if (term != current) {
             current = term;
-            fprintf(vocabFile, "%d,%llu,%s\n", current, pos, invVocab[current].c_str());
+            fprintf(vocabFile, "%u,%llu,%s\n", current, pos, invVocab[current].c_str());
         }
         pos += line.size()+1; // +1 for newline
     }
-
+    
     // storing urls
     FILE *urlsFile = fopen(urlsPath.c_str(), "w");
     unordered_map<string, uint>::iterator urlit;
@@ -539,12 +540,18 @@ void Indexer::outputPageRank (string folder) {
     // std::unordered_map<std::string, uint> pageRankUrlCodes;
 
     vector<string> paths = u.listdir(folder);
+    if (paths.size() == 0) {
+        cerr << "there is no page rank run available" << endl;
+        return;
+    }
     FILE *indexFile = fopen((folder + '/' + paths[0]).c_str(), "r");
     FILE *newFile = fopen((folder + "/compressed.txt").c_str(), "w");
-    uint ori, dest, prev;
-    prev = ori = 0;
+    uint ori, dest, prev, lastdest;
+    ori = lastdest = 0;
+    prev = 1;
     bool first = true;
     while (fscanf(indexFile, "%u,%u\n", &ori, &dest) == 2) {
+        if ((lastdest == dest and ori == prev) or (ori == dest)) continue;
         if (prev != ori) {
             if (first) {
                 fprintf(newFile, "%u ", ori);
@@ -554,6 +561,7 @@ void Indexer::outputPageRank (string folder) {
         }
         fprintf(newFile, "%u ", dest);
         prev = ori;
+        lastdest = dest;
     }
     fclose(indexFile);
     fclose(newFile);
@@ -584,7 +592,8 @@ void Indexer::outputAnchorText (string folder) {
     FILE *vocFile = fopen((folder + "/vocabulary.txt").c_str(), "w");
     
     uint ori, dest, prev;
-    prev = ori = 0;
+    ori = 0;
+    prev = 1;
     bool first = true;
     string term;
     long long unsigned int pos = 0;
@@ -632,16 +641,19 @@ void Indexer::run () {
     }
 
     // merges them
-    // cout << "Merge standard index..." << endl;
-    // mergeRuns(runfolder, mergefolder);
-    // cout << "Merge page rank info..." << endl;
-    // mergePageRankRuns(runfolder+"_pagerank", mergefolder);
-    // cout << "Merge anchor text info..." << endl;
-    // mergePageRankRuns(runfolder+"_anchortext", mergefolder);
-
-    // outputIndex(runfolder);
-    // outputPageRank(runfolder+"_pagerank");
-    // outputAnchorText(runfolder+"_anchortext");
+    cout << "Merge standard index..." << endl;
+    mergeRuns(runfolder, mergefolder);
+    cout << "Merge page rank info..." << endl;
+    mergePageRankRuns(runfolder+"_pagerank", mergefolder);
+    cout << "Merge anchor text info..." << endl;
+    mergePageRankRuns(runfolder+"_anchortext", mergefolder);
+    
+    cout << "Output standard index" << endl;
+    outputIndex(runfolder);
+    cout << "Output page rank" << endl;
+    outputPageRank(runfolder+"_pagerank");
+    cout << "Output anchor text" << endl;
+    outputAnchorText(runfolder+"_anchortext");
 }
 
 void Indexer::log (uint indexed, int type) {
