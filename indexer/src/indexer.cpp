@@ -23,7 +23,7 @@ struct linkSorter {
     bool operator () (pair<uint, uint> const &a, pair<uint, uint> const &b) const {
         if (a.first < b.first) return true;
         else if (a.first == b.first) {
-            if (a.second <= b.second) return true;
+            if (a.second < b.second) return true;
             else return false;
         } else return false;
     }
@@ -141,6 +141,7 @@ void Indexer::addTuple (uint term, uint doc, vector<uint> pos) {
 }
 
 void Indexer::dumpTuples () {
+    cout << "Enter Dump Function" << endl;
     memoryUsed = 0;
     pair<uint, uint> p;
 
@@ -156,6 +157,7 @@ void Indexer::dumpTuples () {
             fprintf(file, "%u,", t.pos[p]);
         }
         fprintf(file, "%u\n", t.pos[t.pos.size()-1]);
+        cachedTuples[i].pos.clear();
     }
     fclose(file);
 
@@ -164,8 +166,7 @@ void Indexer::dumpTuples () {
     filename = runfolder + "_pagerank/" + to_string(runCount) + ".txt";
     file = fopen(filename.c_str(), "w");
     for (unsigned int i = 0; i < cachedLinks.size(); i++) {
-        p = cachedLinks[i];
-        fprintf(file, "%u,%u\n", p.first, p.second);
+        fprintf(file, "%u,%u\n", cachedLinks[i].first, cachedLinks[i].second);
     }
     fclose(file);
 
@@ -175,15 +176,15 @@ void Indexer::dumpTuples () {
     file = fopen(filename.c_str(), "w");
 
     for (unsigned int i = 0; i < cachedAnchorTuples.size(); i++) {
-        p = cachedAnchorTuples[i];
-        fprintf(file, "%u,%u\n", p.first, p.second);
+        fprintf(file, "%u,%u\n", cachedAnchorTuples[i].first, cachedAnchorTuples[i].second);
     }
     fclose(file);
-
+    
     runCount++;
     cachedTuples.clear();
     cachedLinks.clear();
     cachedAnchorTuples.clear();
+    cout << "Leave Dump Function" << endl;
 }
 
 // recursive function that calls itself until there is only
@@ -447,7 +448,6 @@ void Indexer::indexPage(string raw, string url) {
             docIndexPageRank = getUrlCode(url, pageRankUrlCodes);
             dest = getUrlCode(attr.second, pageRankUrlCodes);
             cacheLink(docIndexPageRank, dest);
-            // cout << "pgrank: " << docIndexPageRank << '.' << dest << endl;
 
             // index anchor terms
             terms = tokenize(anchorText);
