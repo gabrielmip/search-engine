@@ -510,7 +510,7 @@ void Indexer::outputIndex (string folder) {
     // FILE *indexFile = fopen(newPath.c_str(), "r");
     // FILE *vocabFile = fopen(vocabPath.c_str(), "w,ccs=UTF-8");
     ofstream vocabFile (vocabPath);
-    vocabFile << "\xEF\xBB\xBF";
+    // vocabFile << "\xEF\xBB\xBF";
     ifstream indexFile (newPath);
     string line;
     stringstream ss;
