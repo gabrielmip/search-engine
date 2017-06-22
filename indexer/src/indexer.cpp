@@ -161,6 +161,7 @@ void Indexer::dumpTuples () {
     }
     fclose(file);
 
+    /*
     // page rank
     sort(cachedLinks.begin(), cachedLinks.end(), linkSorter());
     filename = runfolder + "_pagerank/" + to_string(runCount) + ".txt";
@@ -179,11 +180,12 @@ void Indexer::dumpTuples () {
         fprintf(file, "%u,%u\n", cachedAnchorTuples[i].first, cachedAnchorTuples[i].second);
     }
     fclose(file);
-    
+    */
+
     runCount++;
     cachedTuples.clear(); cachedTuples.shrink_to_fit();
-    cachedLinks.clear(); cachedLinks.shrink_to_fit();
-    cachedAnchorTuples.clear(); cachedAnchorTuples.shrink_to_fit();
+    // cachedLinks.clear(); cachedLinks.shrink_to_fit();
+    // cachedAnchorTuples.clear(); cachedAnchorTuples.shrink_to_fit();
     cout << "Out." << endl;
 }
 
@@ -423,7 +425,7 @@ void Indexer::indexPage(string raw, string url) {
                 continue;
             }
         }
-        
+        /*
         tagName = it->tagName();
         if (tagName == "a" or tagName == "A") {
             it->parseAttributes();
@@ -458,7 +460,10 @@ void Indexer::indexPage(string raw, string url) {
                 cacheAnchorTerm(termIndex, dest);
             }
             
-        }  else if ((!it->isTag()) && (!it->isComment())) {
+        }  else 
+        */
+        
+        if ((!it->isTag()) && (!it->isComment())) {
             // do the standard indexing with textual terms from doc
             phrase = u.cleanTerm(it->text());
             terms = tokenize(phrase);
@@ -503,7 +508,9 @@ void Indexer::outputIndex (string folder) {
 
     // storing vocabulary together with position on index file
     // FILE *indexFile = fopen(newPath.c_str(), "r");
-    FILE *vocabFile = fopen(vocabPath.c_str(), "w");
+    // FILE *vocabFile = fopen(vocabPath.c_str(), "w,ccs=UTF-8");
+    ofstream vocabFile (vocabPath);
+    vocabFile << "\xEF\xBB\xBF";
     ifstream indexFile (newPath);
     string line;
     stringstream ss;
@@ -511,15 +518,16 @@ void Indexer::outputIndex (string folder) {
     term = current = 0;
     long long unsigned int pos = 0;
 
-    fprintf(vocabFile, "%d,%llu,%s\n", current, pos, invVocab[current].c_str());
+    vocabFile << current << ',' << pos << ',' << invVocab[current] << '\n';
+    // fprintf(vocabFile, "%d,%llu,%s\n", current, pos, invVocab[current].c_str());
     while (!indexFile.eof()) {
         getline(indexFile, line);
-        
         ss.str(line); // overkill...
         ss >> term;
         if (term != current) {
             current = term;
-            fprintf(vocabFile, "%u,%llu,%s\n", current, pos, invVocab[current].c_str());
+            vocabFile << current << ',' << pos << ',' << invVocab[current] << '\n';
+            // fwprintf(vocabFile, L"%u,%llu,%s\n", current, pos, invVocab[current].c_str());
         }
         pos += line.size()+1; // +1 for newline
     }
@@ -533,7 +541,8 @@ void Indexer::outputIndex (string folder) {
 
     fclose(urlsFile);
     indexFile.close();
-    fclose(vocabFile);
+    vocabFile.close();
+    // fclose(vocabFile);
 }
 
 void Indexer::outputPageRank (string folder) {
@@ -646,6 +655,7 @@ void Indexer::run () {
     cout << "Output standard index" << endl;
     outputIndex(runfolder);
     
+    /*
     cout << "Merge page rank info..." << endl;
     mergePageRankRuns(runfolder+"_pagerank", mergefolder);
     cout << "Output page rank" << endl;
@@ -655,6 +665,7 @@ void Indexer::run () {
     mergePageRankRuns(runfolder+"_anchortext", mergefolder);
     cout << "Output anchor text" << endl;
     outputAnchorText(runfolder+"_anchortext");
+    */
 }
 
 void Indexer::log (uint indexed, int type) {

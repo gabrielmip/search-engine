@@ -2,11 +2,29 @@
 #include <cstdio>
 #include <map>
 #include <string>
+#include <unicode/utypes.h>
+#include <unicode/unistr.h>
+#include <unicode/translit.h>
 
 using namespace std;
 
+string proc (string str) {
+    UnicodeString source = UnicodeString::fromUTF8(StringPiece(str));
+
+    UErrorCode status = U_ZERO_ERROR;
+    Transliterator *accentsConverter = Transliterator::createInstance(
+        "NFD; [:M:] Remove; NFC", UTRANS_FORWARD, status);
+    accentsConverter->transliterate(source);
+    string result;
+    source.toUTF8String(result);
+
+    return result;
+}
+
 int main(){
     string term = "ÁáuúÚûÛ";
+  	cout << proc(term) << endl;
+    return 1;
 
     unsigned char c;
     for (int i = 0; i < term.length(); i++) {

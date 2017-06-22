@@ -7,6 +7,9 @@
 #include <map>
 #include <dirent.h>
 #include <sys/types.h>
+#include <unicode/utypes.h>
+#include <unicode/unistr.h>
+#include <unicode/translit.h>
 
 class Utils {
     public:
@@ -14,8 +17,10 @@ class Utils {
         std::vector<std::string> listdir (std::string folder);
         std::string cleanTerm (std::string term);
         bool isStopWord (std::string);
+        std::string toUTF8 (std::string raw);
+
     private:
         std::unordered_set<std::string> stopWords;
-        std::map<char, char> accents;
+        Transliterator *accentsConverter;
         // std::map<char, char> accentReplacementes;
 };

@@ -1,6 +1,6 @@
 OBJ_DIR=./bin
 SRC_DIR=./src
-FLAGS=-std=c++11 -Wall -g -I /usr/local/include/htmlcxx -L/usr/local/lib -lhtmlcxx
+FLAGS=-std=c++11 -Wall -g -I /usr/local/include/htmlcxx -L/usr/local/lib -lhtmlcxx `pkg-config --libs --cflags icu-uc icu-io`
 
 all: prep build
 
