@@ -96,16 +96,16 @@ vector<string> Indexer::tokenize (string page) {
     return tokens;
 }
 
-uint Indexer::getUrlCode (string url, unordered_map<string, uint> &m) {
-    unordered_map<string, uint>::iterator it = m.find(url);    
+uint Indexer::getUrlCode (string url, map<string, uint> &m) {
+    map<string, uint>::iterator it = m.find(url);    
     if (it == m.end()) { // url wasnt found
         m[url] = m.size();
     }
     return m[url];
 }
 
-uint Indexer::getTermCode (string term, unordered_map<string, uint> &m) {
-    unordered_map<string, uint>::iterator it = m.find(term);
+uint Indexer::getTermCode (string term, map<string, uint> &m) {
+    map<string, uint>::iterator it = m.find(term);
     if (it == m.end()) { // term wasnt found
         m[term] = m.size();
     }
@@ -397,7 +397,7 @@ void Indexer::indexPage(string raw, string url) {
     pair<bool, string> attr;
     map<string, string> attrs;
     
-    unordered_map<uint, vector<uint> > appearsAt;
+    map<uint, vector<uint> > appearsAt;
     string phrase;
     Tuple a;
     
@@ -471,7 +471,7 @@ void Indexer::indexPage(string raw, string url) {
     }
 
     // store tuples
-    unordered_map<uint, vector<uint> >::iterator mt;
+    map<uint, vector<uint> >::iterator mt;
     for (mt = appearsAt.begin(); mt != appearsAt.end(); mt++) {
         uint termIndex = mt->first;
         vector<uint> positions = mt->second;
@@ -494,9 +494,9 @@ void Indexer::outputIndex (string folder) {
     // moving index to output folder
     rename(oldPath.c_str(), newPath.c_str());
 
-    // creating inverse vocabulary hash unordered_map
-    unordered_map<uint, string> invVocab;
-    unordered_map<string, uint>::iterator it;
+    // creating inverse vocabulary hash map
+    map<uint, string> invVocab;
+    map<string, uint>::iterator it;
     for (it = vocabulary.begin(); it != vocabulary.end(); it++) {
         invVocab[it->second] = it->first;
     }
@@ -526,7 +526,7 @@ void Indexer::outputIndex (string folder) {
     
     // storing urls
     FILE *urlsFile = fopen(urlsPath.c_str(), "w");
-    unordered_map<string, uint>::iterator urlit;
+    map<string, uint>::iterator urlit;
     for (urlit = urlCodes.begin(); urlit != urlCodes.end(); urlit++) {
         fprintf(urlsFile, "%u,%s\n", urlit->second, urlit->first.c_str());
     }
@@ -537,7 +537,7 @@ void Indexer::outputIndex (string folder) {
 }
 
 void Indexer::outputPageRank (string folder) {
-    // std::unordered_map<std::string, uint> pageRankUrlCodes;
+    // std::map<std::string, uint> pageRankUrlCodes;
 
     vector<string> paths = u.listdir(folder);
     if (paths.size() == 0) {
@@ -568,7 +568,7 @@ void Indexer::outputPageRank (string folder) {
 
 
     FILE *urlFile = fopen((folder + "/urls.txt").c_str(), "w");
-    unordered_map<string, uint>::iterator it;
+    map<string, uint>::iterator it;
     for (it = pageRankUrlCodes.begin(); it != pageRankUrlCodes.end(); it++) {
         fprintf(urlFile, "%s %u\n", it->first.c_str(), it->second);
     }
@@ -576,11 +576,11 @@ void Indexer::outputPageRank (string folder) {
 }
 
 void Indexer::outputAnchorText (string folder) {
-    // std::unordered_map<std::string, uint> anchorVocabulary;
+    // std::map<std::string, uint> anchorVocabulary;
 
     // inverted vocabulary index
-    unordered_map<uint, string> inverted;
-    unordered_map<string, uint>::iterator it;
+    map<uint, string> inverted;
+    map<string, uint>::iterator it;
     for (it = anchorVocabulary.begin(); it != anchorVocabulary.end(); it++) {
         inverted[it->second] = it->first;
     }
@@ -643,15 +643,16 @@ void Indexer::run () {
     // merges them
     cout << "Merge standard index..." << endl;
     mergeRuns(runfolder, mergefolder);
-    cout << "Merge page rank info..." << endl;
-    mergePageRankRuns(runfolder+"_pagerank", mergefolder);
-    cout << "Merge anchor text info..." << endl;
-    mergePageRankRuns(runfolder+"_anchortext", mergefolder);
-    
     cout << "Output standard index" << endl;
     outputIndex(runfolder);
+    
+    cout << "Merge page rank info..." << endl;
+    mergePageRankRuns(runfolder+"_pagerank", mergefolder);
     cout << "Output page rank" << endl;
     outputPageRank(runfolder+"_pagerank");
+    
+    cout << "Merge anchor text info..." << endl;
+    mergePageRankRuns(runfolder+"_anchortext", mergefolder);
     cout << "Output anchor text" << endl;
     outputAnchorText(runfolder+"_anchortext");
 }
