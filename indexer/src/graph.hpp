@@ -1,33 +1,22 @@
 #include <iostream>
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 typedef unsigned int uint;
 
 typedef struct {
     std::vector<uint>::iterator curr;
     std::vector<uint>::iterator end;
-} InEdgeIterator;
-
-typedef struct {
-    std::map<uint, std::vector<uint> >::iterator curr;
-    std::map<uint, std::vector<uint> >::iterator end;
-} VertexIterator;
-
-typedef struct {
-    std::map<uint, uint>::iterator curr;
-    std::map<uint, uint>::iterator end;
-} OutEdgeIterator;
+} EdgeIterator;
 
 class Graph {
 public:
+    Graph (uint size);
     void insertEdge (uint orig, uint dest);
-    InEdgeIterator getInEdgeIterator (uint vertex);
-    VertexIterator getVertexIterator ();
-    OutEdgeIterator getOutEdgeIterator ();
-    uint getOutEdgesCount (uint vertex);
-    bool isVertexAlone (uint vertex);
+    EdgeIterator getEdgeIterator (uint vertex);
+    uint outEdges (uint vertex);
+    uint size ();
 private:
-    std::map<uint, std::vector<uint> > inEdges;
-    std::map<uint, uint> countOutEdges;
+    std::vector<std::vector<uint> > inedges;
+    std::vector<uint> outedges;
 };

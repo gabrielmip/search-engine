@@ -5,6 +5,7 @@
 #include <iterator>
 #include <algorithm>
 #include <cstdlib>
+#include <unordered_map>
 #include "graph.hpp"
 
 #define MIN_DIFF_NEEDED 0.0001
@@ -13,7 +14,12 @@
 
 using namespace std;
 
-float abs (float a) {
+typedef struct {
+    float prev;
+    float curr;
+} RankNode;
+
+float myabs (float a) {
     if (a < 0) return -1*a;
     else return a;
 }
@@ -22,7 +28,6 @@ float abs (float a) {
 void populateGraph (Graph &g, string filename) {
     ifstream finf (filename);
     string line;
-    // stringstream ss;
     uint vertex, neighbor;
     // each index line
     while (getline(finf, line)) {
@@ -36,89 +41,68 @@ void populateGraph (Graph &g, string filename) {
     finf.close();
 }
 
+uint largestFromUrlList (string filename) {
+    ifstream finf (filename);
+    string line, url;
+    uint pos, id, largest = 0;
+
+    while (getline(finf, line)) {
+        pos = line.find(" ");
+        id = atof(line.substr(pos+1, line.size()-pos).c_str());
+        if (id > largest) largest = id;
+    }
+    
+    finf.close();
+    return largest; // largest id found
+}
+
+void initializeRankList (vector<RankNode> &ranks) {
+    for (uint i = 0; i < ranks.size(); i++) {
+        ranks[i].prev = 1;
+    }
+}
+
 // return new page rank value for the given vertex
-float calculateNewRank (Graph g, map<uint, float> &pageRanks, uint vertex, float dfactor) {
+float calculateNewRank (Graph g, vector<RankNode> &pageRanks, uint vertex, float dfactor) {
     float rankByInEdges = 0; // portion of rank gotten from inEdges
     float neighborRank, neighborOutEdges;
-    InEdgeIterator it = g.getInEdgeIterator(vertex); 
+    EdgeIterator it = g.getEdgeIterator(vertex);
     
     for (; it.curr != it.end; it.curr++) {
-        neighborOutEdges = g.getOutEdgesCount(*it.curr);
-        neighborRank = pageRanks[*it.curr];
-        if (neighborRank == 0) { // var unset
-            neighborRank = INITIAL_RANK;
-            pageRanks[*it.curr] = INITIAL_RANK;
-        }
+        neighborOutEdges = g.outEdges(*it.curr);
+        neighborRank = pageRanks[*it.curr].prev;
         rankByInEdges += neighborRank/neighborOutEdges;
     }
 
     return (1-dfactor + dfactor*rankByInEdges);
 }
 
-// initialize vertexes that no other vertex is linked to it
-uint setAloneVertexes (Graph g, map<uint, float> &prevRanks, OutEdgeIterator it, float dfactor) {
-    uint count = 0;
-    for (; it.curr != it.end; it.curr++) {
-        if (g.isVertexAlone((*it.curr).first)) {
-            // as no vertex is connected to this one,
-            // rank will never change, being always
-            // equals to 1-dfactor
-            prevRanks[(*it.curr).first] = 1-dfactor;
-            count++;
-        }
-    }
-    return count;
-}
-
-void calculatePageRank (Graph g, map<uint, float> &pageRanks, float dfactor) {
-    float diff, newRank, oldRank;
-    VertexIterator it = g.getVertexIterator();
-    VertexIterator backup; 
-    backup.curr = it.curr;
-    uint nvertexes = 0;
-    uint neighbor;
-    map<uint, float> prevRanks; // stores previous ranks while pageRanks stores the current ones
+void calculatePageRank (Graph g, vector<RankNode> &pageRanks, float dfactor) {
+    float diff, newRank;
     
-    for (int i = 0; i < MAX_ITERATIONS; i++) {
-        // reset iterator and diff accumulator
-        it.curr = backup.curr;
+    for (uint i = 0; i < MAX_ITERATIONS; i++) {
+        cout << "#" << i+1 << "... ";
+        cout.flush();
+        
         diff = 0;
-        
-        cout << "Starting iteration number " << i+1 << "..." << endl;
-
-        // updates each vertex's page rank
-        for (; it.curr != it.end; it.curr++) {
-            neighbor = it.curr->first;
-            newRank = calculateNewRank(g, prevRanks, neighbor, dfactor);
-            oldRank = prevRanks[neighbor];
-            if (oldRank == 0) {
-                oldRank = INITIAL_RANK;
-            }
-            pageRanks[neighbor] = newRank;
-            diff += abs(oldRank-newRank);
-            if (i==0) nvertexes++;
+        // calculates vertex new rank
+        for (uint vertex = 0; vertex < g.size(); vertex++) {
+            cout << vertex << ' ';
+            cout.flush();
+            newRank = calculateNewRank(g, pageRanks, vertex, dfactor);
+            diff += abs(pageRanks[vertex].prev - newRank);
+            pageRanks[vertex].curr = newRank;
         }
         
-        // first iteration:
-        // sets all lonely wolves to 1-dfactor, as their
-        // ranks are never going to change
-        if (i == 0) {
-            OutEdgeIterator outIter = g.getOutEdgeIterator();
-            uint n = setAloneVertexes(g, prevRanks, outIter, dfactor);
-            diff += n*(1-dfactor);
-            nvertexes++;
-        }
-
-        // updates prevRank to be the new ranks
-        it.curr = backup.curr;
-        for (; it.curr != it.end; it.curr++) {
-            prevRanks[(*it.curr).first] = pageRanks[(*it.curr).first];
+        // update nodes with their new values
+        for (uint vertex = 0; vertex < g.size(); vertex++) {
+            // cout << vertex << ": " << pageRanks[vertex].prev << " -> " << pageRanks[vertex].curr << endl;
+            pageRanks[vertex].prev = pageRanks[vertex].curr;
         }
 
         // average change
-        diff /= nvertexes;
-
-        cout << "Done! Average change found: " << diff << endl << endl;
+        diff /= g.size();
+        printf("%.5f\n", diff);
 
         // if ranks have converged 
         if (diff < MIN_DIFF_NEEDED) break;
@@ -126,11 +110,10 @@ void calculatePageRank (Graph g, map<uint, float> &pageRanks, float dfactor) {
 
 }
 
-void outputPageRanks (map<uint, float> pageRanks, string outputPath) {
+void outputPageRanks (vector<RankNode> pageRanks, string outputPath) {
     ofstream fout (outputPath);
-    map<uint, float>::iterator it;
-    for (it = pageRanks.begin(); it != pageRanks.end(); it++) {
-        fout << it->first << ' ' << it->second << '\n';
+    for (uint i = 0; i < pageRanks.size(); i++) {
+        fout << i << ' ' << pageRanks[i].prev << '\n';
     }
     fout.close();
 }
@@ -154,23 +137,27 @@ string generateOutputPath (string filename) {
 }
 
 int main (int argc, char** argv) {
-    if (argc < 2 or argc > 3) {
+    if (argc < 3 or argc > 4) {
         cout << "Please provide path to the index as parameter. ";
         cout << "Optionally, provide the d factor for page rank calculation." << endl;
         exit(1);
     }
 
-    string filename = string(argv[1]);
-    string outputPath = generateOutputPath(filename);
-    float dfactor = (argc == 3) ? atof(argv[2]) : 0.85;
+    string indexName = string(argv[1]);
+    string outputPath = generateOutputPath(indexName);
+    string urlName = string(argv[2]);
+    float dfactor = (argc == 4) ? atof(argv[3]) : 0.85;
     
-    cout << filename << endl;
-    cout << outputPath << endl;
-    cout << dfactor << endl;
+    // cout << indexName << endl;
+    // cout << outputPath << endl;
+    // cout << dfactor << endl;
 
-    Graph g;
-    map<uint, float> pageRanks;
-    populateGraph(g, filename);
+    uint largestID = largestFromUrlList(urlName);
+    cout << "Graph size: " << largestID << endl;
+    Graph g (largestID + 1);
+    populateGraph(g, indexName);
+    vector<RankNode> pageRanks (largestID + 1);
+    initializeRankList(pageRanks);
     calculatePageRank(g, pageRanks, dfactor);
     outputPageRanks(pageRanks, outputPath);
 }

@@ -2,39 +2,27 @@
 
 using namespace std;
 
-InEdgeIterator Graph::getInEdgeIterator (uint vertex) {
-    InEdgeIterator iter;
-    iter.curr = inEdges[vertex].begin();
-    iter.end = inEdges[vertex].end();
-    return iter;
-}
-
-// quase bom :)
-VertexIterator Graph::getVertexIterator () {
-    VertexIterator iter;
-    iter.curr = inEdges.begin();
-    iter.end = inEdges.end();
-    return iter;
-}
-
-OutEdgeIterator Graph::getOutEdgeIterator () {
-    OutEdgeIterator it;
-    it.curr = countOutEdges.begin();
-    it.end = countOutEdges.end();
-    return it;
+Graph::Graph (uint size) {
+    inedges.resize(size);
+    outedges.resize(size);
 }
 
 void Graph::insertEdge (uint orig, uint dest) {
-    countOutEdges[orig]++;
-    inEdges[dest].push_back(orig);
+    inedges[dest].push_back(orig);
+    outedges[orig]++;
 }
 
-uint Graph::getOutEdgesCount (uint vertex) {
-    return countOutEdges[vertex];
+EdgeIterator Graph::getEdgeIterator (uint vertex) {
+    EdgeIterator it;
+    it.curr = inedges[vertex].begin();
+    it.end = inedges[vertex].end();
+    return it;
 }
 
-bool Graph::isVertexAlone (uint vertex) {
-    map<uint, vector<uint> >::iterator it = inEdges.find(vertex);
-    if (it == inEdges.end()) return true;
-    return false;
+uint Graph::outEdges (uint vertex) {
+    return outedges[vertex];
+}
+
+uint Graph::size () {
+    return inedges.size();
 }
