@@ -46,13 +46,6 @@ string Utils::toUTF8 (string raw) {
         if (c < 128) result += c;
         else result+=0xc2+(c>0xbf), result+=(raw[i]&0x3f)+0x80;
     }
-    /*
-    while (*in) {
-        if (*in<128) *out++=*in++;
-        else *out++=0xc2+(*in>0xbf), *out++=(*in++&0x3f)+0x80;
-    }
-    return string(out);
-    */
     return result;
 }
 
@@ -78,3 +71,30 @@ bool Utils::isStopWord (string word) {
     else return true;
 }
 
+vector<string> Utils::tokenize (string page) {
+    vector<string> tokens;
+    string token;
+    uint current, previous;
+    vector<char> separators = {'\t',' ','\n','\r','.',',',';',':','!','?','^','\'','"','@','#','$','%','&','*','(',')','{','}','[',']','-','+','=','_','/','\\','|','<','>'};
+    current = previous = 0;
+    while (current < page.size()) {
+        // iterates over separators to see if end of word was found
+        for (unsigned int i = 0; i < separators.size(); i++) {
+            if (page[current] == separators[i]) {
+                // word is considered if size is greater than 0, ofc
+                if (current-previous > 0) {
+                    token = page.substr(previous, current-previous);
+                    tokens.push_back(token);
+                }
+                previous = current + 1;
+                break;
+            }
+        }
+        current++;
+    }
+    if (previous < current) {
+        token = page.substr(previous, current-previous);
+        tokens.push_back(token);        
+    }
+    return tokens;
+}

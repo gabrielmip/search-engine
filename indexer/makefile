@@ -4,7 +4,10 @@ FLAGS=-std=c++11 -Wall -g -I /usr/local/include/htmlcxx -L/usr/local/lib -lhtmlc
 
 all: prep build
 
-build: indexer search
+build: indexer search pagerank
+
+pagerank:
+	g++ $(SRC_DIR)/pagerank.cpp $(SRC_DIR)/graph.cpp -o pagerank
 
 search:
 	g++ $(SRC_DIR)/search.cpp $(FLAGS) -o search
@@ -41,4 +44,4 @@ prep:
 	mkdir -p logs
 
 clean:
-	rm $(OBJ_DIR)/*.o indexer search
+	rm $(OBJ_DIR)/*.o indexer search pagerank

@@ -1,11 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cstdio>
-#include <cstdlib>
-#include <map>
-#include <string>
-#include <vector>
+#include "search.hpp"
 
 using namespace std;
 
@@ -18,6 +11,8 @@ typedef struct {
     map<uint, llu> pos;
     map<uint, string> invUrls;
 } Index;
+
+
 
 // for list of list sorting in ascending order on the size of the lists
 bool sortDocsPerToken (vector<uint> const &a, vector<uint> const &b) {

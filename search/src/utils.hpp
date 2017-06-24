@@ -18,9 +18,10 @@ class Utils {
         std::string cleanTerm (std::string term);
         bool isStopWord (std::string);
         std::string toUTF8 (std::string raw);
+        std::vector<std::string> tokenize (std::string page);
 
     private:
         std::unordered_set<std::string> stopWords;
         Transliterator *accentsConverter;
-        // std::map<char, char> accentReplacementes;
+        
 };

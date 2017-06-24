@@ -3,6 +3,9 @@
         "*.tcc": "cpp",
         "hashtable": "cpp",
         "unordered_map": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "type_traits": "cpp"
     }
 }
