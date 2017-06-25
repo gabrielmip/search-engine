@@ -6,9 +6,9 @@ all: prep build
 
 build: search
 
-search: utils unigram anchor
+search: utils unigram # anchor
 	g++ -c $(SRC_DIR)/search.cpp $(FLAGS) -o $(OBJ_DIR)/search.o
-	g++ $(SRC_DIR)/search.o $(SRC_DIR)/utils.o $(SRC_DIR)/unigram_index.o $(SRC_DIR)/anchor_index.o $(FLAGS) -o search
+	g++ $(OBJ_DIR)/search.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/unigram_index.o $(FLAGS) -o search
 
 utils:
 	g++ -c $(SRC_DIR)/utils.cpp $(FLAGS) -o $(OBJ_DIR)/utils.o

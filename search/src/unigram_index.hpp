@@ -1,4 +1,3 @@
-#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -21,5 +20,5 @@ public:
 private:
     FILE *index;
     std::map<std::string, ull> positions; // maps terms to positions at index file
-    map<uint, std::string> urls;
+    std::map<uint, std::string> urls;
 };

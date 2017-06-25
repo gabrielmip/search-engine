@@ -41,7 +41,7 @@ vector<string> Utils::listdir (string folder) {
 string Utils::toUTF8 (string raw) {
     unsigned char c;
     string result;
-    for (int i = 0; i < raw.size(); i++) {
+    for (unsigned int i = 0; i < raw.size(); i++) {
         c = raw[i];
         if (c < 128) result += c;
         else result+=0xc2+(c>0xbf), result+=(raw[i]&0x3f)+0x80;

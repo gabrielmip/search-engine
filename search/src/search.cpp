@@ -2,29 +2,33 @@
 
 using namespace std;
 
+/*
 void SearchEngine::initAnchorIndex (string indexPath, string vocabPath) {
 
 }
+*/
 
 void SearchEngine::initUnigramIndex (string indexPath, string vocabPath, string urlPath) {
     unigram = new UnigramIndex(indexPath, vocabPath, urlPath);
 }
 
-void SearchEngine::search (string raw) {
+vector<string> SearchEngine::search (string raw) {
     vector<string> query;
     
     string processed = u.cleanTerm(raw);
     vector<string> tokens = u.tokenize(processed);
-    for (int i = 0; i < tokens.size(); i++) {
+    for (unsigned int i = 0; i < tokens.size(); i++) {
         if (u.isStopWord(tokens[i])) continue;
         query.push_back(tokens[i]);
     }
-
-    vector<string> unigramResults = unigram->query(query);
-    for (int i = 0; i < 5 && i < unigramResults.size(); i++) {
-        cout << unigramResults[i] << endl;
+  
+    vector<string> finalRes;
+    vector<pair<string, float> > unigramResults = unigram->query(query);
+    for (uint i = 0; i < 5 && i < unigramResults.size(); i++) {
+        cout << unigramResults[i].first << ' ' << unigramResults[i].second << endl;
+        finalRes.push_back(unigramResults[i].first);
     }
-    return unigramResults;
+    return finalRes;
 }
 
 int main (int argc, char **argv) {
@@ -45,7 +49,7 @@ int main (int argc, char **argv) {
             cout << "Results:\n\n";
         }
 
-        for (int i = 0; i < 5 && i < results.size(); i++) {
+        for (uint i = 0; i < 5 && i < results.size(); i++) {
             cout << "> " << results[i] << endl;
         }
         
