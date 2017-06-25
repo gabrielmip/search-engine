@@ -2,9 +2,10 @@
 
 using namespace std;
 
-UnigramIndex::UnigramIndex (string indexPath, string vocabPath) {
+UnigramIndex::UnigramIndex (string indexPath, string vocabPath, string urlPath) {
     index = fopen(indexPath.c_str(), "r");
     initVocabulary(vocabPath);
+    initUrl(urlPath);
 }
 
 // returns the 50 best scored documents
@@ -88,6 +89,21 @@ void UnigramIndex::initVocabulary (string path) {
         positions[term] = pos;
     }
     file.close();
+}
+
+void UnigramIndex::initUrl (string urlPath) {
+    ifstream finf (urlPath);
+    string line, url;
+    uint id, largest = 0;
+
+    while (getline(finf, line)) {
+        pos = line.find(",");
+        id = strtoul(line.substr(0,pos));
+        url = line.substr(pos+1, line.size()-pos);
+        urls[id] = url;
+    }
+    
+    finf.close();
 }
 
 bool UnigramIndex::termNotFound (string term) {

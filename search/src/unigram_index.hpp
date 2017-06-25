@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -15,6 +16,7 @@ public:
     std::vector<std::pair<std::string, float> > query (std::vector<std::string> terms);
     void populateVectors (std::map<uint, std::vector<float> > &vecs, uint termIndex, uint querySize);
     void initVocabulary (std::string path);
+    void initUrl (std::string urlPath);
     bool termNotFound (std::string term);
 private:
     FILE *index;
