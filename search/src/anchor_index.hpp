@@ -21,4 +21,4 @@ private:
     FILE *index;
     std::map<std::string, ull> positions; // maps terms to positions at index file
     map<uint, std::string> urls;
-}
+};

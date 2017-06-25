@@ -74,7 +74,7 @@ void UnigramIndex::populateVectors (map<uint, vector<float> > &vecs, uint termIn
 
     // calculating final TF-IDF for doc terms
     for (int d = 0; d < docs.size(); d++) {
-        vecs[docs[d]][i] *= log(totalDocs/(1+docs.size()));
+        vecs[docs[d]][i] *= log(urls.size()/(1+docs.size()));
     }
 }
 
@@ -94,8 +94,8 @@ void UnigramIndex::initVocabulary (string path) {
 void UnigramIndex::initUrl (string urlPath) {
     ifstream finf (urlPath);
     string line, url;
-    uint id, largest = 0;
-
+    uint id;
+    
     while (getline(finf, line)) {
         pos = line.find(",");
         id = strtoul(line.substr(0,pos));

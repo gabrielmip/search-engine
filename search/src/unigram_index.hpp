@@ -12,7 +12,7 @@ typedef unsigned long long ull;
 
 class UnigramIndex {
 public:
-    UnigramIndex (std::string indexPath, std::string vocabPath);
+    UnigramIndex (std::string indexPath, std::string vocabPath, std::string urlPath);
     std::vector<std::pair<std::string, float> > query (std::vector<std::string> terms);
     void populateVectors (std::map<uint, std::vector<float> > &vecs, uint termIndex, uint querySize);
     void initVocabulary (std::string path);
@@ -22,4 +22,4 @@ private:
     FILE *index;
     std::map<std::string, ull> positions; // maps terms to positions at index file
     map<uint, std::string> urls;
-}
+};

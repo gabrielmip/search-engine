@@ -6,7 +6,17 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "anchor_index.hpp"
+#include "unigram_index.hpp"
+#include "utils.hpp"
 
 class SearchEngine {
-
-}
+public:
+    void initAnchorIndex (std::string indexPath, std::string vocabPath);
+    void initUnigramIndex (std::string indexPath, std::string vocabPath, std::string urlPath);
+    void search (std::string query);
+private:
+    AnchorIndex *anchor;
+    UnigramIndex *unigram;
+    Utils u;
+};
