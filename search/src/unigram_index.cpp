@@ -4,9 +4,9 @@ using namespace std;
 
 struct rankingSorter {
     bool operator () (pair<uint, float> const &a, pair<uint, float> const &b) const {
-        if (a.first < b.first) return true;
+        if (a.first > b.first) return true;
         else if (a.first == b.first) {
-            if (a.second < b.second) return true;
+            if (a.second > b.second) return true;
             else return false;
         } else return false;
     }
@@ -54,7 +54,7 @@ vector<pair<string, float> > UnigramIndex::query (vector<string> terms) {
     // sort
     sort(rankings.begin(), rankings.end(), rankingSorter());
     for (uint i = 0; i < 50 && i < rankings.size(); i++) {
-        string url = urls[rankings[i].first];
+        string url = urls[rankings[i].second];
         float score = rankings[i].second;
         results.push_back(make_pair(url, score));
     }
@@ -64,20 +64,22 @@ vector<pair<string, float> > UnigramIndex::query (vector<string> terms) {
 
 void UnigramIndex::populateVectors (map<uint, vector<float> > &vecs, uint termIndex, uint querySize) {
     vector<uint> docs;
-    uint term, freq, doc, current;
+    uint term, doc, current;
+    ull freq;
     char c = 'a';
     
-    fscanf(index, "%ul,%ul,%ul,", &term, &doc, &freq);
+    fscanf(index, "%u,%u,%llu%c", &term, &doc, &freq, &c);
     while (c != '\n') fscanf(index, "%c", &c);
-
+    
     do {
         docs.push_back(doc); // df
         if (vecs[doc].size() < querySize)
             vecs[doc].resize(querySize);
         vecs[doc][termIndex]++; // tf
         
-        fscanf(index, "%ul,%ul,%ul,", &current, &doc, &freq);
+        fscanf(index, "%u,%u,%llu%c", &current, &doc, &freq, &c);
         while (c != '\n') fscanf(index, "%c", &c);
+    
     } while (current == term);
 
     // calculating final TF-IDF for doc terms
@@ -91,9 +93,25 @@ void UnigramIndex::initVocabulary (string path) {
     string term, line;
     uint id;
     ull pos;
+    int pointer, prev;
+    char c;
+    
+    // skipping first line
+    getline(file, line);
     while (getline(file, line)) {
         stringstream ss (line);
-        ss >> term >> id >> pos;
+        
+        /*
+        prev = pointer = line.find(',');
+        term = line.substr(0, pointer);
+        pointer = line.find(',');
+        id = stoul(line.substr(prev+1, pointer));
+        pos = stoul(line.substr(pointer+1, line.size()-1));
+        */
+
+        ss >> id >> c >> pos;
+        pointer = line.rfind(',');
+        term = line.substr(pointer+1, line.size()-pointer-1);
         positions[term] = pos;
     }
     file.close();
@@ -117,7 +135,7 @@ void UnigramIndex::initUrl (string urlPath) {
 
 bool UnigramIndex::termNotFound (string term) {
     map<string, ull>::iterator it = positions.find(term);
-    if (it == positions.end()) {
-        return true;
-    } else return false;
+    if (it != positions.end()) {
+        return false;
+    } else return true;
 }

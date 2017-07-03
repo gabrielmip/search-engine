@@ -2,9 +2,12 @@ OBJ_DIR=./bin
 SRC_DIR=./src
 FLAGS=-std=c++11 -Wall -g -I /usr/local/include/htmlcxx -L/usr/local/lib -lhtmlcxx `pkg-config --libs --cflags icu-uc icu-io`
 
-all: prep build
+all: prep build pagerank
 
 build: search
+
+pagerank:
+	g++ $(SRC_DIR)/pagerank.cpp $(SRC_DIR)/graph.cpp $(FLAGS) -o pagerank
 
 search: utils unigram # anchor
 	g++ -c $(SRC_DIR)/search.cpp $(FLAGS) -o $(OBJ_DIR)/search.o

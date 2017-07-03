@@ -24,8 +24,7 @@ vector<string> SearchEngine::search (string raw) {
   
     vector<string> finalRes;
     vector<pair<string, float> > unigramResults = unigram->query(query);
-    for (uint i = 0; i < 5 && i < unigramResults.size(); i++) {
-        cout << unigramResults[i].first << ' ' << unigramResults[i].second << endl;
+    for (uint i = 0; i < 10 && i < unigramResults.size(); i++) {
         finalRes.push_back(unigramResults[i].first);
     }
     return finalRes;
@@ -48,11 +47,12 @@ int main (int argc, char **argv) {
         if (results.size() > 0) {
             cout << "Results:\n\n";
         }
-
+ 
         for (uint i = 0; i < 5 && i < results.size(); i++) {
-            cout << "> " << results[i] << endl;
+            cout << results[i] << endl;
         }
-        
+
+        results.clear();
         cout << "\n---------------------------------\n";
     }
 }
